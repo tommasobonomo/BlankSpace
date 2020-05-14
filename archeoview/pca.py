@@ -14,16 +14,16 @@ def pca_decomposition(
     """Applies Principal Component Analysis on the image and returns the number of components required
 
     Arguments:
-        image -- np.ndarray with 3 axes: (height, width, bands).
+        image -- np.ndarray with 3 axes: `(height, width, bands)`.
 
     Keyword Arguments:
         n_dimensions -- Number of dimensions to return from PCA (default: {3})
-        bands_first -- If true, axes of image are in this order: (bands, height, width) (default: {False})
+        bands_first -- If true, axes of image are in this order: `(bands, height, width)` (default: {False})
         normalise -- If image output should be normalised between [0, 1] with min-max scaling (default: {True})
 
     Returns:
-        A tuple with the output image with shape (height, width, n_dimensions) and the explained variance
-        ratio of PCA, i.e. how much variance is explained by these n_dimensions
+        A tuple with the output image with shape `(height, width, n_dimensions) if bands_first = False else (n_dimensions, height, width)`
+        and the explained variance ratio of PCA, i.e. how much variance is explained by these n_dimensions
     """
 
     # Let's get the bands first files in bands last
@@ -45,5 +45,9 @@ def pca_decomposition(
     # Possibly normalise between [0, 1]
     if normalise:
         pca_image = minmax_scaling(pca_image)
+
+    # Return to bands_first if that's the case
+    if bands_first:
+        pca_image = np.rollaxis(pca_image, 2, 0)
 
     return pca_image, pca.explained_variance_ratio_.sum()
