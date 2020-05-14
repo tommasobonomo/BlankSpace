@@ -1,11 +1,12 @@
 import numpy as np
+from typing import Tuple
 
 from sklearn.decomposition import PCA
 
 
 def pca_decomposition(
     image: np.ndarray, n_dimensions: int = 3, bands_first: bool = False
-) -> np.ndarray:
+) -> Tuple[np.ndarray, float]:
     """Applies Principal Component Analysis on the image and returns the number of components required
 
     Arguments:
@@ -16,7 +17,8 @@ def pca_decomposition(
         bands_first -- If true, axes of image are in this order: (bands, height, width) (default: {False})
 
     Returns:
-        The output image with shape (height, width, n_dimensions)
+        A tuple with the output image with shape (height, width, n_dimensions) and the explained variance 
+        ratio of PCA, i.e. how much variance is explained by these n_dimensions
     """
 
     # Let's get the bands first files in bands last
@@ -35,4 +37,4 @@ def pca_decomposition(
     # Back to 2D image
     pca_image = flattened_pca.reshape(height, width, n_dimensions)
 
-    return pca_image
+    return pca_image, pca.explained_variance_ratio_
