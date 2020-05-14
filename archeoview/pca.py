@@ -1,7 +1,8 @@
 import numpy as np
 from typing import Tuple
-
 from sklearn.decomposition import PCA
+
+from archeoview.utils import minmax_scaling
 
 
 def pca_decomposition(
@@ -43,10 +44,6 @@ def pca_decomposition(
 
     # Possibly normalise between [0, 1]
     if normalise:
-        for band_idx in range(n_dimensions):
-            min_band = pca_image[:, :, band_idx].min()
-            max_band = pca_image[:, :, band_idx].max()
-            pca_image[:, :, band_idx] -= min_band
-            pca_image[:, :, band_idx] /= max_band - min_band
+        pca_image = minmax_scaling(pca_image)
 
-    return pca_image, pca.explained_variance_ratio_
+    return pca_image, pca.explained_variance_ratio_.sum()

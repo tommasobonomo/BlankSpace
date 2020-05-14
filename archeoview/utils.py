@@ -32,3 +32,33 @@ def geotiff_to_numpy(image_path: str) -> Tuple[List[str], np.ndarray]:
     # We roll around the axes so that bands are last
     image_matrix = np.rollaxis(np.array(value_bands), 0, 3)
     return name_bands, image_matrix
+
+
+def minmax_scaling(image: np.ndarray, bands_first: bool = False) -> np.ndarray:
+    """Performs min-max scaling of an input image per band
+
+    Arguments:
+        image -- The input image, a np.ndarray with shape (height, width, bands), unless 
+        `bands_first = True`
+
+    Keyword Arguments:
+        bands_first -- If True, input image has shape (bands, height, width) (default: {False})
+
+    Returns:
+        The input image with the same format scaled per band
+    """
+    if bands_first:
+        image = np.rollaxis(image, 0, 3)
+
+    _, _, n_bands = image.shape
+
+    for band_idx in range(n_bands):
+        min_band = image[:, :, band_idx].min()
+        max_band = image[:, :, band_idx].max()
+        image[:, :, band_idx] -= min_band
+        image[:, :, band_idx] /= max_band - min_band
+
+    if bands_first:
+        image = np.rollaxis(image, 2, 0)
+
+    return image
