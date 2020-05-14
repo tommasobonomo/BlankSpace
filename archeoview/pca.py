@@ -6,10 +6,13 @@ from typing import List, Tuple
 
 
 def geotiff_to_numpy(image_path: str) -> Tuple[List[str], np.ndarray]:
-    """
-    Image path must point to a directory that contains all bands as GeoTiff files.
+    """Extracts values of GeoTiff file in numpy array
 
-    Returns a np.ndarray of shape (height, width) of the final image with all bands
+    Arguments:
+        image_path -- A path to a directory that contains one `.tiff` file for every band of the image
+
+    Returns:
+        A tuple of the names of the bands and the image matrix with shape (height, width, bands)
     """
 
     name_bands: List[str] = []
