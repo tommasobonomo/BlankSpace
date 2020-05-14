@@ -29,8 +29,9 @@ def geotiff_to_numpy(image_path: str) -> Tuple[List[str], np.ndarray]:
     # TODO: #1 add interpolation of bands with higher resolution
 
     # We also assume that the bands have the same resolution
+    image_matrix = np.array(value_bands)
     # We roll around the axes so that bands are last
-    image_matrix = np.rollaxis(np.array(value_bands), 0, 3)
+    image_matrix = np.rollaxis(image_matrix, 0, 3)
     return name_bands, image_matrix
 
 
