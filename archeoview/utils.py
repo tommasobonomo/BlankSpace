@@ -2,10 +2,55 @@ import os
 import rasterio as rio
 import numpy as np
 
+from scipy.interpolate import RectBivariateSpline
+
 from typing import List, Tuple
 
 
-def geotiff_to_numpy(image_path: str) -> Tuple[List[str], np.ndarray]:
+def interpolate(value_band: np.ndarray, target_shape: Tuple[int, int]) -> np.ndarray:
+    x_target, y_target = target_shape
+    x_shape, y_shape = value_band.shape
+
+    x_coord_range = np.linspace(0, x_target, num=x_shape, dtype="int")
+    y_coord_range = np.linspace(0, y_target, num=y_shape, dtype="int")
+
+    rect_bivariate_spline = RectBivariateSpline(
+        x_coord_range, y_coord_range, value_band,
+    )
+
+    return rect_bivariate_spline(range(x_target), range(y_target), grid=True)
+
+
+def interpolate_bands(
+    value_bands: List[np.ndarray], interpolation: bool = True
+) -> np.ndarray:
+
+    # Check if interpolation is needed
+    all_shapes = frozenset([band.shape for band in value_bands])
+
+    if len(all_shapes) <= 1:
+        # We don't need interpolation, all bands have same resolution
+        return np.array(value_bands)
+    else:
+        # There is more than one resolution
+        max_shape = max(all_shapes)
+        if not interpolation:
+            # Should skip low resolution
+            high_res_value_bands = [
+                band for band in value_bands if band.shape == max_shape
+            ]
+            return np.array(high_res_value_bands)
+        else:
+            # Should interpolate low resoultion away
+            interpolated_value_bands = [
+                interpolate(band, max_shape) for band in value_bands
+            ]
+            return np.array(interpolated_value_bands)
+
+
+def geotiff_to_numpy(
+    image_path: str, interpolation: bool = True
+) -> Tuple[List[str], np.ndarray]:
     """Extracts values of GeoTiff file in numpy array
 
     Arguments:
@@ -26,10 +71,8 @@ def geotiff_to_numpy(image_path: str) -> Tuple[List[str], np.ndarray]:
                 # Assumes that tiff_file has only one band
                 value_bands.append(tiff_file.read(1))
 
-    # TODO: #1 add interpolation of bands with higher resolution
-
     # We also assume that the bands have the same resolution
-    image_matrix = np.array(value_bands)
+    image_matrix = interpolate_bands(value_bands, interpolation=interpolation)
     # We roll around the axes so that bands are last
     image_matrix = np.rollaxis(image_matrix, 0, 3)
     return name_bands, image_matrix
