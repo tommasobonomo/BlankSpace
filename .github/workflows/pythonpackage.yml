@@ -22,9 +22,9 @@ jobs:
       - name: Setup Miniconda
         uses: goanpeca/setup-miniconda@v1.3.0
         with:
+          activate-environment: archeoview
           environment-file: environment.yml
           python-version: ${{ matrix.python-version }}
-          activate-environment: archeoview
       - name: Test with pytest
         run: |
           pytest
