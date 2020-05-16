@@ -1,6 +1,55 @@
 import numpy as np
 
-from archeoview.utils import geotiff_to_numpy, minmax_scaling
+from archeoview.utils import (
+    interpolate,
+    interpolate_bands,
+    geotiff_to_numpy,
+    minmax_scaling,
+)
+
+
+def test_interpolate():
+    test_array = np.random.rand(14, 20)
+    assert interpolate(test_array, (28, 40)).shape == (
+        28,
+        40,
+    ), "Should be able to do simple scaling"
+
+    assert interpolate(test_array, (28, 28)).shape == (
+        28,
+        28,
+    ), "Should be able to scale differently for different dimensions"
+
+    test_array2 = np.random.rand(25, 31)
+    assert interpolate(test_array2, (28, 35)).shape == (
+        28,
+        35,
+    ), "Should be able to scale very weird shapes"
+
+
+def test_interpolate_bands():
+    assert interpolate_bands([]).shape == (
+        0,
+    ), "If given no bands should return no bands"
+
+    test_bands = [np.random.rand(14, 20)] * 3
+    assert interpolate_bands(test_bands).shape == (
+        3,
+        14,
+        20,
+    ), "Should return np.ndarray with correct shape"
+
+    test_bands2 = [np.random.rand(14, 20)] * 3 + [np.random.rand(12, 15)] * 2
+    assert interpolate_bands(test_bands2).shape == (
+        5,
+        14,
+        20,
+    ), "Should return all bands interpolated correctly to a certain dimension"
+    assert interpolate_bands(test_bands2, interpolation=False).shape == (
+        3,
+        14,
+        20,
+    ), "Should return all high-res bands and skip lower res bands"
 
 
 def test_geotiff_to_numpy():
