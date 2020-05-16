@@ -60,6 +60,15 @@ def test_geotiff_to_numpy():
         len(bands_names) == image.shape[2]
     ), "Names should correspond to number of bands"
 
+    _, image2 = geotiff_to_numpy(
+        "data/20180926-kortgene-multires/", interpolation=False
+    )
+    assert image2.shape == (
+        174,
+        252,
+        6,
+    ), "Without interpolation should have only 6 bands"
+
 
 def test_minmax_scaling():
     _, image = geotiff_to_numpy("data/20180807-kortgene/")

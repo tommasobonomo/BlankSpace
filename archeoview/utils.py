@@ -48,7 +48,9 @@ def interpolate_bands(
             return np.array(interpolated_value_bands)
 
 
-def geotiff_to_numpy(image_path: str) -> Tuple[List[str], np.ndarray]:
+def geotiff_to_numpy(
+    image_path: str, interpolation: bool = True
+) -> Tuple[List[str], np.ndarray]:
     """Extracts values of GeoTiff file in numpy array
 
     Arguments:
@@ -70,7 +72,7 @@ def geotiff_to_numpy(image_path: str) -> Tuple[List[str], np.ndarray]:
                 value_bands.append(tiff_file.read(1))
 
     # We also assume that the bands have the same resolution
-    image_matrix = interpolate_bands(value_bands)
+    image_matrix = interpolate_bands(value_bands, interpolation=interpolation)
     # We roll around the axes so that bands are last
     image_matrix = np.rollaxis(image_matrix, 0, 3)
     return name_bands, image_matrix
