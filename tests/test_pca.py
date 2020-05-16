@@ -1,7 +1,7 @@
 import numpy as np
+
+
 from archeoview.utils import geotiff_to_numpy
-
-
 from archeoview.pca import pca_decomposition
 
 
