@@ -103,6 +103,7 @@ dependencies:
   - pickleshare=0.7.5=py38h32f6830_1001
   - pip=20.1=pyh9f0ad1d_0
   - pixman=0.38.0=h516909a_1003
+  - pluggy=0.13.1=py38h32f6830_1
   - poppler=0.87.0=h4190859_1
   - poppler-data=0.4.9=1
   - postgresql=12.2=h8573dbc_1
@@ -111,6 +112,7 @@ dependencies:
   - prompt-toolkit=3.0.5=py_0
   - pthread-stubs=0.4=h14c3975_1001
   - ptyprocess=0.6.0=py_1001
+  - py=1.8.1=py_0
   - pycparser=2.20=py_0
   - pygments=2.6.1=py_0
   - pyopenssl=19.1.0=py_1
@@ -177,8 +179,6 @@ dependencies:
     - nbdime==2.0.0
     - pathspec==0.8.0
     - pipreqs==0.4.10
-    - pluggy==0.13.1
-    - py==1.8.1
     - pycodestyle==2.6.0
     - pyflakes==2.2.0
     - pytest==5.4.2
