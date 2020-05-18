@@ -14,8 +14,10 @@ def interpolate(value_band: np.ndarray, target_shape: Tuple[int, int]) -> np.nda
     x_coord_range = np.linspace(0, x_target, num=x_shape, dtype="int")
     y_coord_range = np.linspace(0, y_target, num=y_shape, dtype="int")
 
+    scaling_factor = max(x_target // x_shape, y_target // y_shape, 1)
+
     rect_bivariate_spline = RectBivariateSpline(
-        x_coord_range, y_coord_range, value_band,
+        x_coord_range, y_coord_range, value_band, kx=scaling_factor, ky=scaling_factor
     )
 
     return rect_bivariate_spline(range(x_target), range(y_target), grid=True)
@@ -46,6 +48,16 @@ def interpolate_bands(
                 interpolate(band, max_shape) for band in value_bands
             ]
             return np.array(interpolated_value_bands)
+
+
+def upscale(image: np.ndarray, target_shape: Tuple[int, int]) -> np.ndarray:
+
+    upscaled_bands: List[np.ndarray] = []
+    for i in range(image.shape[2]):
+        upscaled_bands.append(interpolate(image[:, :, i], target_shape))
+
+    upscaled_image = np.rollaxis(np.array(upscaled_bands), 0, 3)
+    return minmax_scaling(upscaled_image)
 
 
 def geotiff_to_numpy(
