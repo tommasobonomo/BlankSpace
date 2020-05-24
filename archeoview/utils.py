@@ -111,13 +111,14 @@ def geotiff_to_numpy(
     name_bands: List[str] = []
     value_bands: List[np.ndarray] = []
 
-    for filename in os.listdir(image_path):
-        if filename.endswith(".tif"):
-            # Assumes that band file is in format name.bandname.tif
-            name_bands.append(filename.split(".")[1])
-            with rio.open(os.path.join(image_path, filename)) as tiff_file:
-                # Assumes that tiff_file has only one band
-                value_bands.append(tiff_file.read(1))
+    if len(os.listdir(image_path)) > 1:
+        # We assume that the image is made of different files, one for each band
+        for filename in os.listdir(image_path):
+            if filename.endswith(".tif"):
+                # Assumes that band file is in format name.bandname.tif
+                name_bands.append(filename.split(".")[1])
+                with rio.open(os.path.join(image_path, filename)) as tiff_file:
+                    value_bands.append(tiff_file.read(1))
 
     # We also assume that the bands have the same resolution
     name_bands, image_matrix = interpolate_or_filter_bands(
