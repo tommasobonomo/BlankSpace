@@ -77,6 +77,15 @@ def test_upscale():
     ), "Should have converted to target shape"
 
 
+def test_upscale():
+    _, image = geotiff_to_numpy("data/20180807-kortgene/")
+    target_shape = image.shape[0] * 2, image.shape[1] * 2
+    upscaled_image = upscale(image, target_shape)
+    assert (
+        upscaled_image.shape[:2] == target_shape
+    ), "Should have converted to target shape"
+
+
 def test_geotiff_to_numpy():
     bands_names, image = geotiff_to_numpy("data/20180807-kortgene/")
 
@@ -106,6 +115,13 @@ def test_geotiff_to_numpy():
     assert (
         len(bands_names3) == image3.shape[2]
     ), "Names should correspond to number of bands"
+
+    _, image3 = geotiff_to_numpy("data/20180926-kortgene-multires/")
+    assert image3.shape == (
+        174,
+        252,
+        12,
+    ), "With interpolation should have all bands upscaled"
 
 
 def test_minmax_scaling():

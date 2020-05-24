@@ -95,6 +95,16 @@ def upscale(image: np.ndarray, target_shape: Tuple[int, int]) -> np.ndarray:
     return minmax_scaling(upscaled_image)
 
 
+def upscale(image: np.ndarray, target_shape: Tuple[int, int]) -> np.ndarray:
+
+    upscaled_bands: List[np.ndarray] = []
+    for i in range(image.shape[2]):
+        upscaled_bands.append(interpolate(image[:, :, i], target_shape))
+
+    upscaled_image = np.rollaxis(np.array(upscaled_bands), 0, 3)
+    return minmax_scaling(upscaled_image)
+
+
 def geotiff_to_numpy(
     image_path: str, interpolation: bool = False
 ) -> Tuple[List[str], np.ndarray]:
