@@ -1,7 +1,7 @@
 # Personal changes
 
 .vscode/
-data/20181013-kortgene-highres/20181013_095233_Tri_80cm_RD_8bit_RGB_Middelburg.tif
+data/too_big/*.tif
 
 
 # Created by https://www.gitignore.io/api/python,jupyternotebooks
