@@ -107,6 +107,18 @@ def test_geotiff_to_numpy():
         len(bands_names3) == image3.shape[2]
     ), "Names should correspond to number of bands"
 
+    bands_names4, image4 = geotiff_to_numpy("data/20180626-kortgene-highres/")
+    assert image4.shape == (
+        2201,
+        3163,
+        3,
+    ), "Correctly reading high-res picture, with only RGB bands"
+    assert bands_names4 == [
+        "R",
+        "G",
+        "B",
+    ], "Band names are not given, so programmatically set to RGB"
+
 
 def test_minmax_scaling():
     _, image = geotiff_to_numpy("data/20180807-kortgene/")

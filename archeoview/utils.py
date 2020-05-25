@@ -108,22 +108,26 @@ def geotiff_to_numpy(
         A tuple of the names of the bands and the image matrix with shape (height, width, bands)
     """
 
-    name_bands: List[str] = []
-    value_bands: List[np.ndarray] = []
-
     if len(os.listdir(image_path)) > 1:
         # We assume that the image is made of different files, one for each band
+        name_bands: List[str] = []
+        value_bands: List[np.ndarray] = []
         for filename in os.listdir(image_path):
             if filename.endswith(".tif"):
                 # Assumes that band file is in format name.bandname.tif
                 name_bands.append(filename.split(".")[1])
                 with rio.open(os.path.join(image_path, filename)) as tiff_file:
                     value_bands.append(tiff_file.read(1))
+        name_bands, image_matrix = interpolate_or_filter_bands(
+            name_bands, value_bands, interpolation=interpolation
+        )
+    else:
+        # We assume the only file in the folder contains all the bands
+        filename = os.listdir(image_path)[0]
+        with rio.open(os.path.join(image_path, filename)) as tiff_file:
+            image_matrix = tiff_file.read()
+        name_bands = ["R", "G", "B"]
 
-    # We also assume that the bands have the same resolution
-    name_bands, image_matrix = interpolate_or_filter_bands(
-        name_bands, value_bands, interpolation=interpolation
-    )
     # We roll around the axes so that bands are last
     image_matrix = np.rollaxis(image_matrix, 0, 3)
     return name_bands, image_matrix
