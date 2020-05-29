@@ -1,8 +1,9 @@
+import os
 import numpy as np
 
 
-from archeoview.utils import geotiff_to_numpy
-from archeoview.pca import pca_image_decomposition
+from archeoview.utils import geotiff_to_numpy, get_image_collection
+from archeoview.pca import pca_image_decomposition, pca_series_decomposition
 
 
 def test_pca_image_decomposition():
@@ -15,9 +16,7 @@ def test_pca_image_decomposition():
         pca_image.shape[:2] == image.shape[:2]
     ), "Height and width axes should be the same"
     assert pca_image.shape[2] == 3, "Should be the default number of components"
-    assert (
-        ratio >= 0 and ratio <= 1
-    ), "A ratio should always be between in the range [0,1]"
+    assert 0 <= ratio < 1, "A ratio should always be between in the range [0,1["
 
     image_2 = np.rollaxis(image, 2, 0)
     pca_image_2, _ = pca_image_decomposition(image_2, n_dimensions=4, bands_first=True)
@@ -26,3 +25,25 @@ def test_pca_image_decomposition():
         pca_image_2.shape[1:] == image_2.shape[1:]
     ), "Height and width axes should be the same"
     assert pca_image_2.shape[0] == 4, "Should be the given number of components, 4"
+
+
+def test_pca_series_decomposition():
+    base_path = "data/"
+    paths = [
+        os.path.join(base_path, path)
+        for path in os.listdir(base_path)
+        if path.endswith("kortgene")
+    ]
+    image_collection = get_image_collection(paths)
+
+    pca_image = pca_series_decomposition(image_collection)
+
+    assert (
+        pca_image.shape[-1] == 3
+    ), "Default PCA decomposition should have 3 dimensions"
+
+    bands_first_collection = np.rollaxis(image_collection, 3, 1)
+    bands_first_pca = pca_series_decomposition(bands_first_collection, bands_first=True)
+    assert (
+        bands_first_pca.shape[1:] == bands_first_collection.shape[2:]
+    ), "Height and width axes should be the same"
