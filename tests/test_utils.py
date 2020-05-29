@@ -140,12 +140,12 @@ def test_minmax_scaling():
         bands_first_image.shape == bands_first_scaled_image.shape
     ), "Output shape should be the same as input"
 
-    overall_scaled_image = minmax_scaling(image, per_band_scaling=False)
+    per_band_scaled_image = minmax_scaling(image, per_band_scaling=True)
     assert (
-        (overall_scaled_image >= 0) & (overall_scaled_image <= 1)
+        (per_band_scaled_image >= 0) & (per_band_scaled_image <= 1)
     ).all(), "All values should be in range [0, 1]"
     assert (
-        image.shape == overall_scaled_image.shape
+        image.shape == per_band_scaled_image.shape
     ), "Output shape should be the same as input"
 
 

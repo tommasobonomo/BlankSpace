@@ -134,7 +134,7 @@ def geotiff_to_numpy(
 
 
 def minmax_scaling(
-    image: np.ndarray, per_band_scaling: bool = True, bands_first: bool = False
+    image: np.ndarray, per_band_scaling: bool = False, bands_first: bool = False
 ) -> np.ndarray:
     """Performs min-max scaling of an input image, resulting with values in the range [0, 1]
 
@@ -143,7 +143,7 @@ def minmax_scaling(
         `bands_first = True`
 
     Keyword Arguments:
-        per_band_scaling -- If True, will perform min-max scaling singularly for each band. Otherwise, will perform min-max scaling over the complete image
+        per_band_scaling -- If True, will perform min-max scaling singularly for each band. Otherwise, will perform min-max scaling over the complete image (default: {False})
         bands_first -- If True, input image has shape (bands, height, width) (default: {False})
 
     Returns:
