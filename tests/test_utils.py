@@ -1,3 +1,4 @@
+import os
 import numpy as np
 
 from archeoview.utils import (
@@ -6,6 +7,7 @@ from archeoview.utils import (
     upscale,
     geotiff_to_numpy,
     minmax_scaling,
+    get_image_collection,
 )
 
 
@@ -107,6 +109,18 @@ def test_geotiff_to_numpy():
         len(bands_names3) == image3.shape[2]
     ), "Names should correspond to number of bands"
 
+    bands_names4, image4 = geotiff_to_numpy("data/20180626-kortgene-highres/")
+    assert image4.shape == (
+        2201,
+        3163,
+        3,
+    ), "Correctly reading high-res picture, with only RGB bands"
+    assert bands_names4 == [
+        "R",
+        "G",
+        "B",
+    ], "Band names are not given, so programmatically set to RGB"
+
 
 def test_minmax_scaling():
     _, image = geotiff_to_numpy("data/20180807-kortgene/")
@@ -125,3 +139,52 @@ def test_minmax_scaling():
     assert (
         bands_first_image.shape == bands_first_scaled_image.shape
     ), "Output shape should be the same as input"
+
+    per_band_scaled_image = minmax_scaling(image, per_band_scaling=True)
+    assert (
+        (per_band_scaled_image >= 0) & (per_band_scaled_image <= 1)
+    ).all(), "All values should be in range [0, 1]"
+    assert (
+        image.shape == per_band_scaled_image.shape
+    ), "Output shape should be the same as input"
+
+
+def test_get_image_collection():
+    base_path = "data/"
+    same_res_paths = [
+        os.path.join(base_path, path)
+        for path in os.listdir(base_path)
+        if path.endswith("kortgene")
+    ]
+    different_res_paths = [
+        os.path.join(base_path, path)
+        for path in os.listdir(base_path)
+        if path.startswith("201808")
+    ]
+
+    collated_collection = get_image_collection(same_res_paths, collate=True)
+    collated_collection2 = get_image_collection(different_res_paths, collate=True)
+    _, test_image = geotiff_to_numpy(same_res_paths[0])
+
+    assert (
+        type(collated_collection) == np.ndarray
+    ), "Collated images should be of type np.ndarray"
+    assert (
+        collated_collection[0] == test_image
+    ).all(), "Should correspond to order of given paths"
+    assert (
+        len(same_res_paths) == collated_collection.shape[0]
+    ), "Same res images should all be put into array even with collate == True"
+    assert (
+        len(different_res_paths) != collated_collection2.shape[0]
+    ), "Different res images should not all be put into array with collate == True"
+
+    uncollated_collection = get_image_collection(different_res_paths, collate=False)
+
+    assert type(uncollated_collection) == list, "Uncollated images should be list"
+    assert len(uncollated_collection) == len(
+        different_res_paths
+    ), "Different res images should all be in list with collate == False"
+    assert (
+        uncollated_collection[0] == test_image
+    ).all(), "Should correspond to order of given paths"

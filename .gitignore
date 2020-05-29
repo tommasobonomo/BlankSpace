@@ -1,6 +1,7 @@
 # Personal changes
 
 .vscode/
+data/too_big/*.tif
 
 
 # Created by https://www.gitignore.io/api/python,jupyternotebooks

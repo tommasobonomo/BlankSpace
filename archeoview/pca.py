@@ -5,7 +5,7 @@ from sklearn.decomposition import PCA
 from archeoview.utils import minmax_scaling
 
 
-def pca_decomposition(
+def pca_image_decomposition(
     image: np.ndarray,
     n_dimensions: int = 3,
     bands_first: bool = False,
@@ -51,3 +51,26 @@ def pca_decomposition(
         pca_image = np.rollaxis(pca_image, 2, 0)
 
     return pca_image, pca.explained_variance_ratio_.sum()
+
+
+def pca_series_decomposition(
+    collection: np.ndarray, bands_first: bool = False, normalise: bool = True
+) -> Tuple[np.ndarray, float]:
+
+    # Idea is we have collection of RGB images (n_images, height, width, 3)
+    # We put together all bands of the different images as if they were only different
+    # bands of a single image. Then we apply normal PCA.
+
+    if bands_first:
+        collection = np.rollaxis(collection, 1, 4)
+
+    _, height, width, _ = collection.shape
+
+    combined_image = np.rollaxis(collection, 0, -1).reshape(height, width, -1)
+
+    pca_image, explained_ratio = pca_image_decomposition(combined_image)
+
+    if bands_first:
+        pca_image = np.rollaxis(pca_image, 2, 0)
+
+    return pca_image, explained_ratio
