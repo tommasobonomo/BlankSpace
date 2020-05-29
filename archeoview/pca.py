@@ -5,7 +5,7 @@ from sklearn.decomposition import PCA
 from archeoview.utils import minmax_scaling
 
 
-def pca_decomposition(
+def pca_image_decomposition(
     image: np.ndarray,
     n_dimensions: int = 3,
     bands_first: bool = False,
@@ -51,3 +51,29 @@ def pca_decomposition(
         pca_image = np.rollaxis(pca_image, 2, 0)
 
     return pca_image, pca.explained_variance_ratio_.sum()
+
+
+def pca_series_decomposition(
+    collection: np.ndarray, bands_first: bool = False, normalise: bool = True
+) -> Tuple[np.ndarray, float]:
+
+    # Idea is we have collection of RGB images (n_images, height, width, 3)
+    # For each band, we treat the various images as dimensions of a point
+    # We can apply PCA to reduce dimensionality to the first singular component.
+
+    n_images = collection.shape[0]
+    pca_bands = []
+    for band_idx in range(3):
+        band_image = np.rollaxis(collection[:, :, :, band_idx], 0, 3)
+        height, width, _ = band_image.shape
+
+        flattened_band = band_image.reshape(-1, n_images)
+
+        pca = PCA(n_components=1)
+        flattened_pca = pca.fit_transform(flattened_band)
+
+        band_pca = flattened_pca.reshape(height, width)
+        pca_bands.append(band_pca)
+
+    pca_bands_np = np.rollaxis(np.array(pca_bands), 0, 3)
+    return pca_bands_np

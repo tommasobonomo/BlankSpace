@@ -2,13 +2,13 @@ import numpy as np
 
 
 from archeoview.utils import geotiff_to_numpy
-from archeoview.pca import pca_decomposition
+from archeoview.pca import pca_image_decomposition
 
 
-def test_pca_decomposition():
+def test_pca_image_decomposition():
     _, image = geotiff_to_numpy("data/20180807-kortgene")
 
-    pca_image, ratio = pca_decomposition(image)
+    pca_image, ratio = pca_image_decomposition(image)
 
     assert len(pca_image.shape) == 3, "Should have 3 axes height, width and bands"
     assert (
@@ -20,7 +20,7 @@ def test_pca_decomposition():
     ), "A ratio should always be between in the range [0,1]"
 
     image_2 = np.rollaxis(image, 2, 0)
-    pca_image_2, _ = pca_decomposition(image_2, n_dimensions=4, bands_first=True)
+    pca_image_2, _ = pca_image_decomposition(image_2, n_dimensions=4, bands_first=True)
 
     assert (
         pca_image_2.shape[1:] == image_2.shape[1:]
