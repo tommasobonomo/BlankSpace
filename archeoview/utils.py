@@ -133,7 +133,9 @@ def geotiff_to_numpy(
     return name_bands, image_matrix
 
 
-def minmax_scaling(image: np.ndarray, bands_first: bool = False) -> np.ndarray:
+def minmax_scaling(
+    image: np.ndarray, per_band_scaling: bool = True, bands_first: bool = False
+) -> np.ndarray:
     """Performs min-max scaling of an input image, resulting with values in the range [0, 1]
 
     Arguments:
@@ -141,24 +143,59 @@ def minmax_scaling(image: np.ndarray, bands_first: bool = False) -> np.ndarray:
         `bands_first = True`
 
     Keyword Arguments:
+        per_band_scaling -- If True, will perform min-max scaling singularly for each band. Otherwise, will perform min-max scaling over the complete image
         bands_first -- If True, input image has shape (bands, height, width) (default: {False})
 
     Returns:
         The input image with the same format scaled in the range [0, 1]
     """
+    out_image = image.copy()
+
     if bands_first:
-        image = np.rollaxis(image, 0, 3)
+        out_image = np.rollaxis(out_image, 0, 3)
 
-    _, _, n_bands = image.shape
+    _, _, n_bands = out_image.shape
 
-    min_band = image.min()
-    max_band = image.max()
-    if max_band == min_band:
-        image = 0
+    if per_band_scaling:
+        # Perform scaling for each singular band
+        for band_idx in range(n_bands):
+            band_image = out_image[:, :, band_idx]
+            min_band = band_image.min()
+            max_band = band_image.max()
+            if max_band == min_band:
+                out_image[:, :, band_idx] = 0
+            else:
+                out_image[:, :, band_idx] = (band_image - min_band) / (
+                    max_band - min_band
+                )
     else:
-        image = (image - min_band) / (max_band - min_band)
+        # Perform scaling over the complete image
+        min_image = out_image.min()
+        max_image = out_image.max()
+        out_image = (out_image - min_image) / (max_image - min_image)
 
     if bands_first:
-        image = np.rollaxis(image, 2, 0)
+        out_image = np.rollaxis(out_image, 2, 0)
 
-    return image
+    return out_image
+
+
+def image_collection(
+    image_paths: List[str], interpolation: bool = False
+) -> List[np.ndarray]:
+    """Helper function to read in multiple images in one collection
+
+    Arguments:
+        image_paths -- List of paths as strings to images that must be part of the collection
+
+    Keyword Arguments:
+        interpolation -- Whether to perform interpolation on bands with a lower resolution than the highest detected (default: {False})
+
+    Returns:
+        A list of arrays, each the numpy array of numbers that describe the given image
+    """
+    images: List[np.ndarray] = []
+    for image_path in image_paths:
+        _, image = geotiff_to_numpy(image_path, interpolation=interpolation)
+        images.append(image)
+    return images
