@@ -1,3 +1,4 @@
+import os
 import numpy as np
 
 from archeoview.utils import (
@@ -6,6 +7,7 @@ from archeoview.utils import (
     upscale,
     geotiff_to_numpy,
     minmax_scaling,
+    image_collection,
 )
 
 
@@ -137,3 +139,28 @@ def test_minmax_scaling():
     assert (
         bands_first_image.shape == bands_first_scaled_image.shape
     ), "Output shape should be the same as input"
+
+    overall_scaled_image = minmax_scaling(image, per_band_scaling=False)
+    assert (
+        (overall_scaled_image >= 0) & (overall_scaled_image <= 1)
+    ).all(), "All values should be in range [0, 1]"
+    assert (
+        image.shape == overall_scaled_image.shape
+    ), "Output shape should be the same as input"
+
+
+def test_image_collection():
+    base_path = "data/"
+    paths = [
+        os.path.join(base_path, path)
+        for path in os.listdir(base_path)
+        if path.endswith("kortgene")
+    ]
+
+    collection = image_collection(paths)
+
+    assert len(collection) == len(
+        paths
+    ), "Should return same number of images of which paths were given"
+    _, test_image = geotiff_to_numpy(paths[0])
+    assert (collection[0] == test_image).all(), "Should get the correct image"
