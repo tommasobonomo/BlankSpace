@@ -7,7 +7,7 @@ from archeoview.utils import (
     upscale,
     geotiff_to_numpy,
     minmax_scaling,
-    image_collection,
+    get_image_collection,
 )
 
 
@@ -149,18 +149,42 @@ def test_minmax_scaling():
     ), "Output shape should be the same as input"
 
 
-def test_image_collection():
+def test_get_image_collection():
     base_path = "data/"
-    paths = [
+    same_res_paths = [
         os.path.join(base_path, path)
         for path in os.listdir(base_path)
         if path.endswith("kortgene")
     ]
+    different_res_paths = [
+        os.path.join(base_path, path)
+        for path in os.listdir(base_path)
+        if path.startswith("201808")
+    ]
 
-    collection = image_collection(paths)
+    collated_collection = get_image_collection(same_res_paths, collate=True)
+    collated_collection2 = get_image_collection(different_res_paths, collate=True)
+    _, test_image = geotiff_to_numpy(same_res_paths[0])
 
-    assert len(collection) == len(
-        paths
-    ), "Should return same number of images of which paths were given"
-    _, test_image = geotiff_to_numpy(paths[0])
-    assert (collection[0] == test_image).all(), "Should get the correct image"
+    assert (
+        type(collated_collection) == np.ndarray
+    ), "Collated images should be of type np.ndarray"
+    assert (
+        collated_collection[0] == test_image
+    ).all(), "Should correspond to order of given paths"
+    assert (
+        len(same_res_paths) == collated_collection.shape[0]
+    ), "Same res images should all be put into array even with collate == True"
+    assert (
+        len(different_res_paths) != collated_collection2.shape[0]
+    ), "Different res images should not all be put into array with collate == True"
+
+    uncollated_collection = get_image_collection(different_res_paths, collate=False)
+
+    assert type(uncollated_collection) == list, "Uncollated images should be list"
+    assert len(uncollated_collection) == len(
+        different_res_paths
+    ), "Different res images should all be in list with collate == False"
+    assert (
+        uncollated_collection[0] == test_image
+    ).all(), "Should correspond to order of given paths"

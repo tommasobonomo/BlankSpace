@@ -4,7 +4,7 @@ import numpy as np
 
 from scipy.interpolate import RectBivariateSpline
 
-from typing import List, Tuple
+from typing import List, Tuple, Union
 
 
 def interpolate(value_band: np.ndarray, target_shape: Tuple[int, int]) -> np.ndarray:
@@ -180,22 +180,32 @@ def minmax_scaling(
     return out_image
 
 
-def image_collection(
-    image_paths: List[str], interpolation: bool = False
-) -> List[np.ndarray]:
+def get_image_collection(
+    image_paths: List[str], collate: bool = True, interpolation: bool = False
+) -> Union[List[np.ndarray], np.ndarray]:
     """Helper function to read in multiple images in one collection
 
     Arguments:
         image_paths -- List of paths as strings to images that must be part of the collection
 
     Keyword Arguments:
+        collate -- Wheter to join every image in one numpy array, dropping the lower resolution images. If False, will return a list of numpy arrays (default: {True})
         interpolation -- Whether to perform interpolation on bands with a lower resolution than the highest detected (default: {False})
 
     Returns:
-        A list of arrays, each the numpy array of numbers that describe the given image
+        A numpy array if collate == True, else a list of arrays. Each array in both structures consists of the numbers that describe the image for the given path
     """
     images: List[np.ndarray] = []
     for image_path in image_paths:
         _, image = geotiff_to_numpy(image_path, interpolation=interpolation)
         images.append(image)
+
+    if collate:
+        all_shapes = frozenset([image.shape for image in images])
+        if len(all_shapes) <= 1:
+            images = np.array(images)
+        else:
+            max_shape = max(all_shapes)
+            images = np.array([image for image in images if image.shape == max_shape])
+
     return images
