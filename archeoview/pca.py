@@ -55,32 +55,22 @@ def pca_image_decomposition(
 
 def pca_series_decomposition(
     collection: np.ndarray, bands_first: bool = False, normalise: bool = True
-) -> np.ndarray:
+) -> Tuple[np.ndarray, float]:
 
     # Idea is we have collection of RGB images (n_images, height, width, 3)
-    # For each band, we treat the various images as dimensions of a point
-    # We can apply PCA to reduce dimensionality to the first singular component.
+    # We put together all bands of the different images as if they were only different
+    # bands of a single image. Then we apply normal PCA.
 
     if bands_first:
         collection = np.rollaxis(collection, 1, 4)
 
-    n_images = collection.shape[0]
-    pca_bands = []
-    for band_idx in range(3):
-        band_image = np.rollaxis(collection[:, :, :, band_idx], 0, 3)
-        height, width, _ = band_image.shape
+    _, height, width, _ = collection.shape
 
-        flattened_band = band_image.reshape(-1, n_images)
+    combined_image = np.rollaxis(collection, 0, -1).reshape(height, width, -1)
 
-        pca = PCA(n_components=1)
-        flattened_pca = pca.fit_transform(flattened_band)
-
-        band_pca = flattened_pca.reshape(height, width)
-        pca_bands.append(band_pca)
+    pca_image, explained_ratio = pca_image_decomposition(combined_image)
 
     if bands_first:
-        pca_bands_np = np.array(pca_bands)
-    else:
-        pca_bands_np = np.rollaxis(np.array(pca_bands), 0, 3)
+        pca_image = np.rollaxis(pca_image, 2, 0)
 
-    return pca_bands_np
+    return pca_image, explained_ratio

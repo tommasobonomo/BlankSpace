@@ -36,14 +36,17 @@ def test_pca_series_decomposition():
     ]
     image_collection = get_image_collection(paths)
 
-    pca_image = pca_series_decomposition(image_collection)
+    pca_image, ratio = pca_series_decomposition(image_collection)
 
+    assert 0 <= ratio < 1, "A ratio should always be between in the range [0,1["
     assert (
         pca_image.shape[-1] == 3
     ), "Default PCA decomposition should have 3 dimensions"
 
     bands_first_collection = np.rollaxis(image_collection, 3, 1)
-    bands_first_pca = pca_series_decomposition(bands_first_collection, bands_first=True)
+    bands_first_pca, _ = pca_series_decomposition(
+        bands_first_collection, bands_first=True
+    )
     assert (
         bands_first_pca.shape[1:] == bands_first_collection.shape[2:]
     ), "Height and width axes should be the same"
