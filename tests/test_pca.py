@@ -2,8 +2,8 @@ import os
 import numpy as np
 
 
-from archeoview.utils import geotiff_to_numpy, get_image_collection
-from archeoview.pca import pca_image_decomposition, pca_series_decomposition
+from blankspace.utils import geotiff_to_numpy, get_image_collection
+from blankspace.pca import pca_image_decomposition, pca_series_decomposition
 
 
 def test_pca_image_decomposition():

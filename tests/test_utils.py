@@ -1,7 +1,7 @@
 import os
 import numpy as np
 
-from archeoview.utils import (
+from blankspace.utils import (
     interpolate,
     interpolate_or_filter_bands,
     upscale,
@@ -120,6 +120,10 @@ def test_geotiff_to_numpy():
         "G",
         "B",
     ], "Band names are not given, so programmatically set to RGB"
+
+    bands_names5, image5 = geotiff_to_numpy("data/EarthEngine/20200515_3.tif")
+    assert image5.shape == (526, 916, 2), "Should retrieve single file image"
+    assert bands_names5 == ["VV", "VH"], "Should also give correct names to bands"
 
 
 def test_minmax_scaling():
