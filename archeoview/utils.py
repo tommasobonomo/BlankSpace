@@ -95,38 +95,60 @@ def upscale(image: np.ndarray, target_shape: Tuple[int, int]) -> np.ndarray:
     return minmax_scaling(upscaled_image)
 
 
+def geotiff_file_to_numpy(
+    image_path: str, interpolation: bool = False
+) -> Tuple[List[str], np.ndarray]:
+    with rio.open(image_path) as tiff_file:
+        image_matrix = tiff_file.read()
+        n_bands = tiff_file.count
+    if n_bands == 3:
+        name_bands = ["R", "G", "B"]
+    elif n_bands == 2:
+        name_bands = ["VV", "VH"]
+
+    return name_bands, image_matrix
+
+
 def geotiff_to_numpy(
     image_path: str, interpolation: bool = False
 ) -> Tuple[List[str], np.ndarray]:
     """Extracts values of GeoTiff file in numpy array
 
     Arguments:
-        image_path -- A path to a directory that contains one `.tiff` file for every band of the image
+        image_path -- Can be a path to: a directory with a `.tiff` file for each band of an image; a directory with a single `.tiff` file that contains all bands of an image; a `.tiff` file that contains all bands of an image
+
+    Keyword Arguments:
         interpolation -- A boolean that indicates if bands of a lower resolution than the maximum should be interpolated or skipped (default: {False})
 
     Returns:
         A tuple of the names of the bands and the image matrix with shape (height, width, bands)
     """
 
-    if len(os.listdir(image_path)) > 1:
-        # We assume that the image is made of different files, one for each band
-        name_bands: List[str] = []
-        value_bands: List[np.ndarray] = []
-        for filename in os.listdir(image_path):
-            if filename.endswith(".tif"):
-                # Assumes that band file is in format name.bandname.tif
-                name_bands.append(filename.split(".")[1])
-                with rio.open(os.path.join(image_path, filename)) as tiff_file:
-                    value_bands.append(tiff_file.read(1))
-        name_bands, image_matrix = interpolate_or_filter_bands(
-            name_bands, value_bands, interpolation=interpolation
-        )
+    if os.path.isdir(image_path):
+        if len(os.listdir(image_path)) > 1:
+            # We assume that the image is made of different files, one for each band
+            name_bands: List[str] = []
+            value_bands: List[np.ndarray] = []
+            for filename in os.listdir(image_path):
+                if filename.endswith(".tif"):
+                    # Assumes that band file is in format name.bandname.tif
+                    name_bands.append(filename.split(".")[1])
+                    with rio.open(os.path.join(image_path, filename)) as tiff_file:
+                        value_bands.append(tiff_file.read(1))
+            name_bands, image_matrix = interpolate_or_filter_bands(
+                name_bands, value_bands, interpolation=interpolation
+            )
+        else:
+            # We assume the only file in the folder contains all the bands
+            filename = os.listdir(image_path)[0]
+            with rio.open(os.path.join(image_path, filename)) as tiff_file:
+                image_matrix = tiff_file.read()
+            name_bands = ["R", "G", "B"]
     else:
-        # We assume the only file in the folder contains all the bands
-        filename = os.listdir(image_path)[0]
-        with rio.open(os.path.join(image_path, filename)) as tiff_file:
-            image_matrix = tiff_file.read()
-        name_bands = ["R", "G", "B"]
+        # If image path is just a .tiff file
+        name_bands, image_matrix = geotiff_file_to_numpy(
+            image_path, interpolation=interpolation
+        )
 
     # We roll around the axes so that bands are last
     image_matrix = np.rollaxis(image_matrix, 0, 3)
