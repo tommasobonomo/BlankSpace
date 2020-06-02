@@ -1,3 +1,4 @@
+import ee
 import os
 import rasterio as rio
 import numpy as np
@@ -5,6 +6,74 @@ import numpy as np
 from scipy.interpolate import RectBivariateSpline
 
 from typing import List, Tuple, Union
+
+Point = Tuple[int, int]
+BoundingBox = Tuple[Point, Point]
+
+
+def sentinel_1_to_google_drive(
+    point: Point,
+    bounding_box: BoundingBox,
+    start_date: str,
+    end_date: str,
+    n_images: Union[int, None] = None,
+    task_name: str = "Sentinel1",
+    drive_folder: str = "EarthEngine",
+) -> List[ee.batch.Task]:
+    """Generates Google Earth Engine tasks to upload Sentinel 1 images to user's Google Drive
+
+    Arguments:
+        point -- Two coordinates that indicate a point in our bounding box
+        bounding_box -- Four coordinates that specify the bounding box, i.e. [[minX, minY], [maxX, maxY]]
+        start_date -- Start date for which we want specific images in format YYYY-MM-DD
+        end_date -- End date in same format. WARNING: a too big date interval might download too many images
+
+    Keyword Arguments:
+        n_images -- Number of images to retrieve in between start_date and end_date, uniformly spaced. If None, will retrieve all images in that time period
+        task_name -- The task name for the Google Earth Engine task (default: {"Sentinel1"})
+        drive_folder -- The folder in Drive where to put the images (default: {"EarthEngine"})
+
+    Returns:
+        A list of Task objects to monitor the task progress
+    """
+
+    dataset = "COPERNICUS/S1_GRD"
+    ee.Initialize()
+
+    # Define location and bounding_box
+    location = ee.Geometry.Point(coords=point)
+    bbox = ee.Geometry.Rectangle(coords=bounding_box)
+
+    # Construct relevant collection
+    image_collection = (
+        ee.ImageCollection(dataset)
+        .filterMetadata("resolution_meters", "equals", 10)
+        .filterBounds(location)
+        .filterDate(start_date, end_date)
+    )
+
+    # Start batch download of all features
+    list_collection = image_collection.toList(1000)
+    n = list_collection.size().getInfo()
+
+    if n_images is None:
+        retrieval_idx = range(n)
+    elif n_images > n or n_images <= 0:
+        retrieval_idx = range(n)
+    else:
+        retrieval_idx = np.linspace(0, n, num=n_images, endpoint=False, dtype=int)
+
+    tasks = []
+    for i in retrieval_idx:
+        image = ee.Image(list_collection.get(i)).clip(bbox).select("VV", "VH")
+        day = image.id().getInfo().split("_")[4].split("T")[0]
+        task = ee.batch.Export.image.toDrive(
+            image, description=f"{day}_{i}", folder=drive_folder, scale=10,
+        )
+        tasks.append(task)
+        task.start()
+
+    return tasks
 
 
 def interpolate(value_band: np.ndarray, target_shape: Tuple[int, int]) -> np.ndarray:
