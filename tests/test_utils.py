@@ -1,7 +1,7 @@
 import os
 import numpy as np
 
-from archeoview.utils import (
+from blankspace.utils import (
     interpolate,
     interpolate_or_filter_bands,
     upscale,

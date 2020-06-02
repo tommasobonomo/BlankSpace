@@ -2,7 +2,7 @@ import numpy as np
 from typing import Tuple
 from sklearn.decomposition import PCA
 
-from archeoview.utils import minmax_scaling
+from blankspace.utils import minmax_scaling
 
 
 def pca_image_decomposition(
