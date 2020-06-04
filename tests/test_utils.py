@@ -1,4 +1,5 @@
 import os
+import ee
 import numpy as np
 
 from blankspace.utils import (
@@ -8,6 +9,7 @@ from blankspace.utils import (
     geotiff_to_numpy,
     minmax_scaling,
     get_image_collection,
+    earth_engine_to_google_drive,
 )
 
 
@@ -192,3 +194,60 @@ def test_get_image_collection():
     assert (
         uncollated_collection[0] == test_image
     ).all(), "Should correspond to order of given paths"
+
+
+def test_earth_engine_to_google_drive():
+    # We can't really test that stuff is being created inside GDrive,
+    # so we'll just make sure that Tasks are constructed correctly
+
+    # Test location
+    point = [4.188454322814947, 52.05157028465844]
+    bbox = [
+        [4.1227080154419005, 52.029502065677526],
+        [4.254887275695807, 52.07542126691518],
+    ]
+
+    tasks = earth_engine_to_google_drive(
+        point=point,
+        bounding_box=bbox,
+        start_date="2020-05-15",
+        end_date="2020-05-16",
+        dataset="COPERNICUS/S1_GRD",
+        bands=["VV", "VH"],
+        drive_folder="VeryNiceFolder",
+        task_name="VeryNiceTest",
+        autostart=False,
+    )
+
+    assert type(tasks[0]) == ee.batch.Task, "Should have returned ee tasks"
+    drive_options = tasks[0].config["fileExportOptions"]["driveDestination"]
+    assert (
+        drive_options["filenamePrefix"].split("_")[1] == "VeryNiceTest"
+    ), "Correct naming of file"
+    assert drive_options["folder"] == "VeryNiceFolder", "Correct naming of folder"
+
+    limited_tasks = earth_engine_to_google_drive(
+        point=point,
+        bounding_box=bbox,
+        start_date="2020-05-15",
+        end_date="2020-05-16",
+        dataset="COPERNICUS/S1_GRD",
+        bands=["VV", "VH"],
+        n_images=10,
+        autostart=False,
+    )
+    assert (
+        len(limited_tasks) == 1
+    ), "For this time interval there should be only 1 image"
+
+    limited_tasks2 = earth_engine_to_google_drive(
+        point=point,
+        bounding_box=bbox,
+        start_date="2020-04-15",
+        end_date="2020-05-16",
+        dataset="COPERNICUS/S1_GRD",
+        bands=["VV", "VH"],
+        n_images=10,
+        autostart=False,
+    )
+    assert len(limited_tasks2) == 10, "Should be limited to 10 images in time period"

@@ -3,41 +3,53 @@ import os
 import rasterio as rio
 import numpy as np
 
-from scipy.interpolate import RectBivariateSpline
-
+from datetime import date
 from typing import List, Tuple, Union
+
+from scipy.interpolate import RectBivariateSpline
 
 Point = Tuple[int, int]
 BoundingBox = Tuple[Point, Point]
 
 
-def sentinel_1_to_google_drive(
+def earth_engine_to_google_drive(
     point: Point,
     bounding_box: BoundingBox,
     start_date: str,
     end_date: str,
+    dataset: str,
+    bands: List[str],
+    scale: int = 10,
     n_images: Union[int, None] = None,
-    task_name: str = "Sentinel1",
+    task_name: str = "ee-download",
     drive_folder: str = "EarthEngine",
+    autostart: bool = True,
 ) -> List[ee.batch.Task]:
-    """Generates Google Earth Engine tasks to upload Sentinel 1 images to user's Google Drive
+    """Generates Google Earth Engine tasks to upload images to user's Google Drive
 
     Arguments:
         point -- Two coordinates that indicate a point in our bounding box
         bounding_box -- Four coordinates that specify the bounding box, i.e. [[minX, minY], [maxX, maxY]]
         start_date -- Start date for which we want specific images in format YYYY-MM-DD
         end_date -- End date in same format. WARNING: a too big date interval might download too many images
+        dataset -- The dataset to use for the retrieval, defined in the Earth Engine documentation (https://developers.google.com/earth-engine/datasets)
+        bands -- Bands of the dataset to download, should correspond to Earth Engine documentation (https://developers.google.com/earth-engine/datasets)
 
     Keyword Arguments:
-        n_images -- Number of images to retrieve in between start_date and end_date, uniformly spaced. If None, will retrieve all images in that time period
-        task_name -- The task name for the Google Earth Engine task (default: {"Sentinel1"})
+        scale -- Scale to download the images, should be univocal for all bands and must be coherent with what specified in Earth Engine documentation (default: {10})
+        n_images -- Number of images to retrieve in between start_date and end_date, uniformly spaced. If None, will retrieve all images in that time period (default: {None})
+        task_name -- The task name for the Google Earth Engine task (default: {"earth_engine_download"})
         drive_folder -- The folder in Drive where to put the images (default: {"EarthEngine"})
+        autostart -- Specify if tasks should be started as soon as the function is called (default: {True})
 
     Returns:
         A list of Task objects to monitor the task progress
     """
 
-    dataset = "COPERNICUS/S1_GRD"
+    assert date.fromisoformat(start_date) < date.fromisoformat(
+        end_date
+    ), "Start date must come before end date"
+
     ee.Initialize()
 
     # Define location and bounding_box
@@ -57,21 +69,26 @@ def sentinel_1_to_google_drive(
     n = list_collection.size().getInfo()
 
     if n_images is None:
-        retrieval_idx = range(n)
+        retrieval_idx = list(range(n))
     elif n_images > n or n_images <= 0:
-        retrieval_idx = range(n)
+        retrieval_idx = list(range(n))
     else:
-        retrieval_idx = np.linspace(0, n, num=n_images, endpoint=False, dtype=int)
+        diff = n // n_images
+        retrieval_idx = list(filter(lambda x: x % diff, range(n)))
 
     tasks = []
     for i in retrieval_idx:
-        image = ee.Image(list_collection.get(i)).clip(bbox).select("VV", "VH")
+        # Get image
+        image = ee.Image(list_collection.get(i)).clip(bbox).select(*bands)
+        # Get date from image name
         day = image.id().getInfo().split("_")[4].split("T")[0]
+
         task = ee.batch.Export.image.toDrive(
-            image, description=f"{day}_{i}", folder=drive_folder, scale=10,
+            image, description=f"{day}_{task_name}", folder=drive_folder, scale=scale,
         )
         tasks.append(task)
-        task.start()
+        if autostart:
+            task.start()
 
     return tasks
 
