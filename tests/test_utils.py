@@ -251,3 +251,17 @@ def test_earth_engine_to_google_drive():
         autostart=False,
     )
     assert len(limited_tasks2) == 10, "Should be limited to 10 images in time period"
+
+    sentinel2_tasks = earth_engine_to_google_drive(
+        point=point,
+        bounding_box=bbox,
+        start_date="2020-04-15",
+        end_date="2020-05-25",
+        dataset="COPERNICUS/S2_SR",
+        bands=["B8", "B4", "B3"],
+        n_images=10,
+        drive_folder="Vegetation",
+        task_name="b8-b4-b3",
+        autostart=False,
+    )
+    assert len(sentinel2_tasks) == 10, "Should also be limited to 10 images"

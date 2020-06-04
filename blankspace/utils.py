@@ -59,7 +59,6 @@ def earth_engine_to_google_drive(
     # Construct relevant collection
     image_collection = (
         ee.ImageCollection(dataset)
-        .filterMetadata("resolution_meters", "equals", 10)
         .filterBounds(location)
         .filterDate(start_date, end_date)
     )
@@ -73,15 +72,21 @@ def earth_engine_to_google_drive(
     elif n_images > n or n_images <= 0:
         retrieval_idx = list(range(n))
     else:
-        diff = n // n_images
-        retrieval_idx = list(filter(lambda x: x % diff, range(n)))
+        retrieval_idx = np.linspace(
+            0, n - 1, num=n_images, endpoint=True, dtype=int
+        ).tolist()
 
     tasks = []
     for i in retrieval_idx:
         # Get image
         image = ee.Image(list_collection.get(i)).clip(bbox).select(*bands)
-        # Get date from image name
-        day = image.id().getInfo().split("_")[4].split("T")[0]
+        # Get date from image name if known dataset
+        if dataset == "COPERNICUS/S1_GRD":
+            day = image.id().getInfo().split("_")[4].split("T")[0]
+        elif dataset == "COPERNICUS/S2_SR":
+            day = image.id().getInfo().split("_")[0].split("T")[0]
+        else:
+            day = i
 
         task = ee.batch.Export.image.toDrive(
             image, description=f"{day}_{task_name}", folder=drive_folder, scale=scale,
