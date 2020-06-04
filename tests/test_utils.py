@@ -67,7 +67,7 @@ def test_interpolate_or_filter_bands():
 
 
 def test_upscale():
-    _, image = geotiff_to_numpy("data/20180807-kortgene/")
+    _, image = geotiff_to_numpy("data/PCA/20180807-kortgene/")
     target_shape = image.shape[0] * 2, image.shape[1] * 2
     upscaled_image = upscale(image, target_shape)
     assert (
@@ -82,14 +82,14 @@ def test_upscale():
 
 
 def test_geotiff_to_numpy():
-    bands_names, image = geotiff_to_numpy("data/20180807-kortgene/")
+    bands_names, image = geotiff_to_numpy("data/PCA/20180807-kortgene/")
 
     assert len(image.shape) == 3, "Image should have shape (height, width, bands)"
     assert (
         len(bands_names) == image.shape[2]
     ), "Names should correspond to number of bands"
 
-    bands_names2, image2 = geotiff_to_numpy("data/20180926-kortgene-multires/")
+    bands_names2, image2 = geotiff_to_numpy("data/PCA/20180926-kortgene-multires/")
     assert image2.shape == (
         174,
         252,
@@ -100,7 +100,7 @@ def test_geotiff_to_numpy():
     ), "Names should correspond to number of bands"
 
     bands_names3, image3 = geotiff_to_numpy(
-        "data/20180926-kortgene-multires/", interpolation=True
+        "data/PCA/20180926-kortgene-multires/", interpolation=True
     )
     assert image3.shape == (
         174,
@@ -111,7 +111,7 @@ def test_geotiff_to_numpy():
         len(bands_names3) == image3.shape[2]
     ), "Names should correspond to number of bands"
 
-    bands_names4, image4 = geotiff_to_numpy("data/20180626-kortgene-highres/")
+    bands_names4, image4 = geotiff_to_numpy("data/PCA/20180626-kortgene-highres/")
     assert image4.shape == (
         2201,
         3163,
@@ -123,13 +123,13 @@ def test_geotiff_to_numpy():
         "B",
     ], "Band names are not given, so programmatically set to RGB"
 
-    bands_names5, image5 = geotiff_to_numpy("data/EarthEngine/20200515_3.tif")
+    bands_names5, image5 = geotiff_to_numpy("data/Coastal-InSAR/20200515_sentinel1.tif")
     assert image5.shape == (526, 916, 2), "Should retrieve single file image"
     assert bands_names5 == ["VV", "VH"], "Should also give correct names to bands"
 
 
 def test_minmax_scaling():
-    _, image = geotiff_to_numpy("data/20180807-kortgene/")
+    _, image = geotiff_to_numpy("data/PCA/20180807-kortgene/")
     scaled_image = minmax_scaling(image)
 
     assert (
@@ -156,7 +156,7 @@ def test_minmax_scaling():
 
 
 def test_get_image_collection():
-    base_path = "data/"
+    base_path = "data/PCA/"
     same_res_paths = [
         os.path.join(base_path, path)
         for path in os.listdir(base_path)
