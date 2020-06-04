@@ -1,4 +1,5 @@
 import os
+import ee
 import numpy as np
 
 from blankspace.utils import (
@@ -8,6 +9,7 @@ from blankspace.utils import (
     geotiff_to_numpy,
     minmax_scaling,
     get_image_collection,
+    earth_engine_to_google_drive,
 )
 
 
@@ -65,7 +67,7 @@ def test_interpolate_or_filter_bands():
 
 
 def test_upscale():
-    _, image = geotiff_to_numpy("data/20180807-kortgene/")
+    _, image = geotiff_to_numpy("data/PCA/20180807-kortgene/")
     target_shape = image.shape[0] * 2, image.shape[1] * 2
     upscaled_image = upscale(image, target_shape)
     assert (
@@ -80,14 +82,14 @@ def test_upscale():
 
 
 def test_geotiff_to_numpy():
-    bands_names, image = geotiff_to_numpy("data/20180807-kortgene/")
+    bands_names, image = geotiff_to_numpy("data/PCA/20180807-kortgene/")
 
     assert len(image.shape) == 3, "Image should have shape (height, width, bands)"
     assert (
         len(bands_names) == image.shape[2]
     ), "Names should correspond to number of bands"
 
-    bands_names2, image2 = geotiff_to_numpy("data/20180926-kortgene-multires/")
+    bands_names2, image2 = geotiff_to_numpy("data/PCA/20180926-kortgene-multires/")
     assert image2.shape == (
         174,
         252,
@@ -98,7 +100,7 @@ def test_geotiff_to_numpy():
     ), "Names should correspond to number of bands"
 
     bands_names3, image3 = geotiff_to_numpy(
-        "data/20180926-kortgene-multires/", interpolation=True
+        "data/PCA/20180926-kortgene-multires/", interpolation=True
     )
     assert image3.shape == (
         174,
@@ -109,7 +111,7 @@ def test_geotiff_to_numpy():
         len(bands_names3) == image3.shape[2]
     ), "Names should correspond to number of bands"
 
-    bands_names4, image4 = geotiff_to_numpy("data/20180626-kortgene-highres/")
+    bands_names4, image4 = geotiff_to_numpy("data/PCA/20180626-kortgene-highres/")
     assert image4.shape == (
         2201,
         3163,
@@ -121,13 +123,13 @@ def test_geotiff_to_numpy():
         "B",
     ], "Band names are not given, so programmatically set to RGB"
 
-    bands_names5, image5 = geotiff_to_numpy("data/EarthEngine/20200515_3.tif")
+    bands_names5, image5 = geotiff_to_numpy("data/Coastal-InSAR/20200515_sentinel1.tif")
     assert image5.shape == (526, 916, 2), "Should retrieve single file image"
     assert bands_names5 == ["VV", "VH"], "Should also give correct names to bands"
 
 
 def test_minmax_scaling():
-    _, image = geotiff_to_numpy("data/20180807-kortgene/")
+    _, image = geotiff_to_numpy("data/PCA/20180807-kortgene/")
     scaled_image = minmax_scaling(image)
 
     assert (
@@ -154,7 +156,7 @@ def test_minmax_scaling():
 
 
 def test_get_image_collection():
-    base_path = "data/"
+    base_path = "data/PCA/"
     same_res_paths = [
         os.path.join(base_path, path)
         for path in os.listdir(base_path)
@@ -192,3 +194,74 @@ def test_get_image_collection():
     assert (
         uncollated_collection[0] == test_image
     ).all(), "Should correspond to order of given paths"
+
+
+# def test_earth_engine_to_google_drive():
+#     # We can't really test that stuff is being created inside GDrive,
+#     # so we'll just make sure that Tasks are constructed correctly
+
+#     # Test location
+#     point = [4.188454322814947, 52.05157028465844]
+#     bbox = [
+#         [4.1227080154419005, 52.029502065677526],
+#         [4.254887275695807, 52.07542126691518],
+#     ]
+
+#     tasks = earth_engine_to_google_drive(
+#         point=point,
+#         bounding_box=bbox,
+#         start_date="2020-05-15",
+#         end_date="2020-05-16",
+#         dataset="COPERNICUS/S1_GRD",
+#         bands=["VV", "VH"],
+#         drive_folder="VeryNiceFolder",
+#         task_name="VeryNiceTest",
+#         autostart=False,
+#     )
+
+#     assert type(tasks[0]) == ee.batch.Task, "Should have returned ee tasks"
+#     drive_options = tasks[0].config["fileExportOptions"]["driveDestination"]
+#     assert (
+#         drive_options["filenamePrefix"].split("_")[1] == "VeryNiceTest"
+#     ), "Correct naming of file"
+#     assert drive_options["folder"] == "VeryNiceFolder", "Correct naming of folder"
+
+#     limited_tasks = earth_engine_to_google_drive(
+#         point=point,
+#         bounding_box=bbox,
+#         start_date="2020-05-15",
+#         end_date="2020-05-16",
+#         dataset="COPERNICUS/S1_GRD",
+#         bands=["VV", "VH"],
+#         n_images=10,
+#         autostart=False,
+#     )
+#     assert (
+#         len(limited_tasks) == 1
+#     ), "For this time interval there should be only 1 image"
+
+#     limited_tasks2 = earth_engine_to_google_drive(
+#         point=point,
+#         bounding_box=bbox,
+#         start_date="2020-04-15",
+#         end_date="2020-05-16",
+#         dataset="COPERNICUS/S1_GRD",
+#         bands=["VV", "VH"],
+#         n_images=10,
+#         autostart=False,
+#     )
+#     assert len(limited_tasks2) == 10, "Should be limited to 10 images in time period"
+
+#     sentinel2_tasks = earth_engine_to_google_drive(
+#         point=point,
+#         bounding_box=bbox,
+#         start_date="2020-04-15",
+#         end_date="2020-05-25",
+#         dataset="COPERNICUS/S2_SR",
+#         bands=["B8", "B4", "B3"],
+#         n_images=10,
+#         drive_folder="Vegetation",
+#         task_name="b8-b4-b3",
+#         autostart=False,
+#     )
+#     assert len(sentinel2_tasks) == 10, "Should also be limited to 10 images"

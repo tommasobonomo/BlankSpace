@@ -7,7 +7,7 @@ from blankspace.pca import pca_image_decomposition, pca_series_decomposition
 
 
 def test_pca_image_decomposition():
-    _, image = geotiff_to_numpy("data/20180807-kortgene")
+    _, image = geotiff_to_numpy("data/PCA/20180807-kortgene")
 
     pca_image, ratio = pca_image_decomposition(image)
 
@@ -28,7 +28,7 @@ def test_pca_image_decomposition():
 
 
 def test_pca_series_decomposition():
-    base_path = "data/"
+    base_path = "data/PCA/"
     paths = [
         os.path.join(base_path, path)
         for path in os.listdir(base_path)
