@@ -51,10 +51,11 @@ class Cell():
             window.title("Vegetation Trend")
 
             y = self.matrix[0:10,self.abs,self.ord]
-            x = ['Col A', 'Col B', 'Col C', 'Col D', 'Col E', 'Col F', 'Col G', 'Col H', 'Col I', 'Col L']
+            x = [f'Day {x+1}' for x in range(matrix.shape[0])]
 
-            fig = plt.figure(figsize=(5,3))
+            fig = plt.figure(figsize=(10,5))
             plt.bar(x=x, height=y)
+            plt.xticks(rotation=45)
 
             canvas = FigureCanvasTkAgg(fig, master=window)
             canvas.draw()
