@@ -53,8 +53,8 @@ class Cell():
             y = self.matrix[0:10,self.abs,self.ord]
             x = [f'Day {x+1}' for x in range(matrix.shape[0])]
 
-            fig = plt.figure(figsize=(10,5))
-            plt.bar(x=x, height=y)
+            fig = plt.figure(figsize=(8,4))
+            plt.plot(x, y, linewidth = 4)
             plt.xticks(rotation=45)
 
             canvas = FigureCanvasTkAgg(fig, master=window)
