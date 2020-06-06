@@ -28,12 +28,9 @@ class Cell():
         if self.master != None :
 
             #calculate index in color range
-            difference = self.matrix[0][self.abs][self.ord] - self.matrix[len(self.matrix)-1][self.abs][self.ord]
-            index_range = difference - min_difference
+            difference = self.matrix[-1, self.abs, self.ord] - self.matrix[0, self.abs, self.ord]
+            index_range = difference + abs(self.min_difference)-1 if self.min_difference < 0 else difference-1
 
-
-            print(index_range)
-            print(len(self.color_range))
             #assign color
             fill = color_range[index_range]
             outline = "black"
@@ -112,11 +109,11 @@ if __name__ == "__main__":
     #matrix
     matrix = np.array([[[random.randint(0,100) for i in range (20)] for i in range (20)] for i in range (10)])
 
-    diff = matrix[9] - matrix[0]
+    diff = matrix[-1] - matrix[0]
     max_difference = np.max(diff)
     min_difference = np.min(diff)
 
-    color_range = list(Color("blue").range_to(Color("red"),abs(max_difference-min_difference)+1))
+    color_range = list(Color("blue").range_to(Color("red"), max_difference - min_difference))
 
     grid = CellGrid(app, 20, 20, 20, matrix, color_range, max_difference, min_difference)
     grid.pack()
