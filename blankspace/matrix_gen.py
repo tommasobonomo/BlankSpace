@@ -3,11 +3,11 @@ import pickle
 import imageio
 import numpy as np
 import matplotlib.pyplot as plt
-import chunk_functions as cf
+from math import isnan
 
 from typing import List, Tuple, Union, Callable
 
-def save_tiff_to_numpy_pkl(
+def save_tif_to_numpy_pkl(
     base_path: str = os.path.join('..', 'data', 'Coastal-InSAR'),
     file_name: str = 'imgs_numpy.pkl'
 ) -> None:
@@ -47,15 +47,15 @@ def generate_single_grid(
     # parameters
     height, width = original_img.shape[0], original_img.shape[1]
     
-    row_window_size, col_window_size = height // n_row, width // n_col
+    row_window_size, col_window_size = round(height / n_row), round(width / n_col)
     row_window_size = 1 if row_window_size == 0 else row_window_size
     col_window_size = 1 if col_window_size == 0 else col_window_size
     
     matrix = np.empty((n_row, n_col))
 
     # crop image and compute chunks
-    for x, row in enumerate(range(0, height - row_window_size + 1, row_window_size)):
-        for y, col in enumerate(range(0, width - col_window_size + 1, col_window_size)):
+    for x, row in enumerate(range(0, height - row_window_size, row_window_size)):
+        for y, col in enumerate(range(0, width - col_window_size, col_window_size)):
             chunk = original_img[row : row + row_window_size,
                                  col : col + col_window_size,
                                  channel]
@@ -87,8 +87,3 @@ def generate_array_of_grids(
         matrix.append(generate_single_grid(img, function, channel, n_row, n_col))
 
     return np.asarray(matrix)
-
-imgs = load_numpy_pkl()
-print([x.shape for x in imgs])
-grids = generate_array_of_grids(imgs, cf.mean)
-print(grids.shape)

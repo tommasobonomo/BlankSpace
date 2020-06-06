@@ -4,6 +4,16 @@ import random
 from colour import Color
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+import matrix_gen as mg
+import chunk_functions as cf
+
+def nandifference(first: np.ndarray, last: np.ndarray):
+    mean_f, mean_l = np.nanmean(first), np.nanmean(last)
+    first = np.where(np.isnan(first), mean_f, first)
+    last = np.where(np.isnan(last), mean_l, last)
+    return last - first
+
+
 
 class Cell():
 
@@ -28,12 +38,15 @@ class Cell():
         if self.master != None :
 
             #calculate index in color range
-            difference = self.matrix[-1, self.abs, self.ord] - self.matrix[0, self.abs, self.ord]
-            difference = int(round(difference * 100))
-            index_range = difference + abs(self.min_difference)-1 if self.min_difference < 0 else difference-1
+            if np.isnan(self.matrix[-1, self.abs, self.ord]) or np.isnan(self.matrix[0, self.abs, self.ord]):
+                fill = Color("black")
+            else:
+                difference = self.matrix[-1, self.abs, self.ord] - self.matrix[0, self.abs, self.ord]
+                difference = int(round(difference * 100))
+                index_range = difference + abs(self.min_difference)-1 if self.min_difference < 0 else difference-1
 
-            #assign color
-            fill = color_range[index_range]
+                #assign color
+                fill = color_range[index_range]
             outline = "black"
 
             xmin = self.abs * self.size
@@ -48,7 +61,7 @@ class Cell():
         if(self.clicked):
 
             window = Toplevel()
-            window.title("Vegetation Trend")
+            window.title("Cell Trend")
 
             y = self.matrix[0:10,self.abs,self.ord]
             x = [f'Day {x+1}' for x in range(matrix.shape[0])]
@@ -108,18 +121,24 @@ class CellGrid(Canvas):
 if __name__ == "__main__":
     app = Tk()
 
-    #matrix
-    matrix = np.random.rand(10, 20, 20)
-    #matrix = np.random.randint(0, 100, (10,20,20))
+    # parameters
+    n_row = 91
+    n_col = 91
+    resolution = 10
 
-    diff = matrix[-1] - matrix[0]
+    # retrieve images
+    matrix = mg.load_numpy_pkl()
+    matrix = mg.generate_array_of_grids(matrix, cf.mean, n_row=n_row, n_col=n_col)
+
+    # compute color scale
+    diff = nandifference(matrix[0], matrix[-1])
     diff = np.round(diff*100).astype(int)
     max_difference = np.max(diff)
     min_difference = np.min(diff)
+    color_range = list(Color("red").range_to(Color("blue"), max_difference - min_difference))
 
-    color_range = list(Color("blue").range_to(Color("red"), max_difference - min_difference))
-
-    grid = CellGrid(app, 20, 20, 20, matrix, color_range, max_difference, min_difference)
+    # create grid
+    grid = CellGrid(app, n_row, n_col, resolution, matrix, color_range, max_difference, min_difference)
     grid.pack()
 
     app.mainloop()
