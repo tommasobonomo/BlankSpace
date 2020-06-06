@@ -28,8 +28,46 @@ def load_numpy_pkl(
         numpy_array = pickle.load(f)
     return numpy_array
 
-def 
+def mean(
+    chunk: np.ndarray,
+) -> float:
+    """return the mean of the pixel values in the chunk"""
+    return np.mean(chunk)
 
-array = load_numpy_pkl()
-plt.imshow(array[0][:,:,0])
-plt.show()
+# add padding to images?
+def generate_single_grid(
+    original_img: np.ndarray,
+    channel: int,
+    function, # typing definition for a function(?)
+    n_row: int = 20,
+    n_col: int = 20
+) -> np.ndarray:
+    """generate numpy grid with shape (n_row, n_col). 
+    values in the grid are defined by the function applied to the pixels present in a cell of the original image"""
+    
+    # check channel compatibility
+    channel = 0 if channel >= original_img.shape[-1] else channel
+
+    # parameters
+    height, width = original_img.shape[0], original_img.shape[1]
+    
+    row_window_size, col_window_size = height // n_row, width // n_col
+    row_window_size = 1 if row_window_size == 0 else row_window_size
+    col_window_size = 1 if col_window_size == 0 else col_window_size
+    
+    matrix = np.empty((n_row, n_col))
+
+    # crop image and compute chunks
+    for x, row in enumerate(range(0, height - row_window_size + 1, row_window_size)):
+        for y, col in enumerate(range(0, width - col_window_size + 1, col_window_size)):
+            chunk = original_img[row : row + row_window_size,
+                                 col : col + col_window_size,
+                                 channel]
+            matrix[x,y] = function(chunk)
+
+    return matrix
+
+x = np.arange(16).reshape((4,4,1))
+print(f'original\n{x}')
+m = generate_single_grid(x, 0, mean, n_col=2, n_row=2)
+print(m)
