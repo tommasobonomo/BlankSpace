@@ -29,6 +29,7 @@ class Cell():
 
             #calculate index in color range
             difference = self.matrix[-1, self.abs, self.ord] - self.matrix[0, self.abs, self.ord]
+            difference = int(round(difference * 100))
             index_range = difference + abs(self.min_difference)-1 if self.min_difference < 0 else difference-1
 
             #assign color
@@ -107,9 +108,11 @@ if __name__ == "__main__":
     app = Tk()
 
     #matrix
-    matrix = np.array([[[random.randint(0,100) for i in range (20)] for i in range (20)] for i in range (10)])
+    matrix = np.random.rand(10, 20, 20)
+    #matrix = np.random.randint(0, 100, (10,20,20))
 
     diff = matrix[-1] - matrix[0]
+    diff = np.round(diff*100).astype(int)
     max_difference = np.max(diff)
     min_difference = np.min(diff)
 

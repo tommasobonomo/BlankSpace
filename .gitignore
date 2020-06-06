@@ -126,4 +126,7 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
+# Molon
+blankspace/test.py
+
 # End of https://www.gitignore.io/api/python,jupyternotebooks
