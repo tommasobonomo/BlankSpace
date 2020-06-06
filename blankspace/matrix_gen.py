@@ -1,9 +1,11 @@
 import os
 import pickle
-import numpy as np
 import imageio
+import numpy as np
 import matplotlib.pyplot as plt
-from typing import List, Tuple, Union
+import chunk_functions as cf
+
+from typing import List, Tuple, Union, Callable
 
 def save_tiff_to_numpy_pkl(
     base_path: str = os.path.join('..', 'data', 'Coastal-InSAR'),
@@ -28,17 +30,11 @@ def load_numpy_pkl(
         numpy_array = pickle.load(f)
     return numpy_array
 
-def mean(
-    chunk: np.ndarray,
-) -> float:
-    """return the mean of the pixel values in the chunk"""
-    return np.mean(chunk)
-
-# add padding to images?
+# TO DO: add padding to images(?)
 def generate_single_grid(
     original_img: np.ndarray,
-    channel: int,
-    function, # typing definition for a function(?)
+    function: Callable[[np.ndarray], float], 
+    channel: int = 0,
     n_row: int = 20,
     n_col: int = 20
 ) -> np.ndarray:
@@ -67,7 +63,32 @@ def generate_single_grid(
 
     return matrix
 
-x = np.arange(16).reshape((4,4,1))
-print(f'original\n{x}')
-m = generate_single_grid(x, 0, mean, n_col=2, n_row=2)
-print(m)
+def generate_array_of_grids(
+    imgs: np.ndarray,
+    function: Callable[[np.ndarray], float],
+    channel: int = 0,
+    n_row: int = 20,
+    n_col: int = 20
+) -> np.ndarray:
+    """generate a series of grids with shape (n_row, n_col)
+    values in the grid are defined by the function applied to the pixels present in a cell of the original image"""
+
+    # check channel compatibility
+    channel = 0 if channel >= imgs[0].shape[-1] else channel
+
+    # resize images to have all images with the same size
+    sizes = np.asarray([[img.shape[0], img.shape[1]] for img in imgs])
+    min_row, min_col = np.min(sizes[:, 0]), np.min(sizes[:, 1])
+    imgs = np.asarray([x[ : min_row, : min_col, : ] for x in imgs])
+
+    # generate grids
+    matrix = []
+    for img in imgs:
+        matrix.append(generate_single_grid(img, function, channel, n_row, n_col))
+
+    return np.asarray(matrix)
+
+imgs = load_numpy_pkl()
+print([x.shape for x in imgs])
+grids = generate_array_of_grids(imgs, cf.mean)
+print(grids.shape)
