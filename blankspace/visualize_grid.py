@@ -7,7 +7,7 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import blankspace.matrix_gen as mg
 import blankspace.chunk_functions as cf
 
-from blankspace.utils import get_image_collection
+from blankspace.utils import get_image_collection, geotiff_to_numpy
 
 
 def nandifference(first: np.ndarray, last: np.ndarray):
@@ -203,7 +203,19 @@ if __name__ == "__main__":
     matrix, row_size, col_size = mg.generate_array_of_grids(
         matrix, cf.mean, n_row=n_row, n_col=n_col
     )
-    row_size, col_size = row_size * resolution, col_size * resolution
+
+    # Read a original RGB image
+    original_bands, original_img_raw = geotiff_to_numpy("data/Coastal-RGB")
+    # Must crop to dimension used for grid splitting
+    rgb_idx = [original_bands.index(band) for band in ["B4", "B3", "B2"]]
+    original_img = np.clip(
+        (original_img_raw[: row_size * n_row, : col_size * col_size, rgb_idx] / 10000),
+        0,
+        1,
+    )
+
+    row_size = row_size * resolution
+    col_size = col_size * resolution
 
     # compute color scale
     diff = nandifference(matrix[0], matrix[-1])
