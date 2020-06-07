@@ -61,7 +61,7 @@ def generate_single_grid(
                                  channel]
             matrix[x,y] = function(chunk)
 
-    return matrix
+    return matrix, row_window_size, col_window_size
 
 def generate_array_of_grids(
     imgs: np.ndarray,
@@ -84,6 +84,7 @@ def generate_array_of_grids(
     # generate grids
     matrix = []
     for img in imgs:
-        matrix.append(generate_single_grid(img, function, channel, n_row, n_col))
+        grid, row_size, col_size = generate_single_grid(img, function, channel, n_row, n_col)
+        matrix.append(grid)
 
-    return np.asarray(matrix)
+    return np.asarray(matrix), row_size, col_size

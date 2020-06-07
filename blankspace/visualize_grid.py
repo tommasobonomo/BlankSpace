@@ -17,12 +17,15 @@ def nandifference(first: np.ndarray, last: np.ndarray):
 
 class Cell():
 
-    def __init__(self, master, x, y, size, matrix, color_range, max_difference, min_difference):
+    def __init__(self, master, x, y, row_size, col_size, matrix, color_range, max_difference, min_difference, range_max, range_min):
         """ Constructor of the object called by Cell(...) """
         self.master = master
         self.abs = x
         self.ord = y
-        self.size= size
+        self.row_size = row_size
+        self.col_size = col_size
+        self.range_max = range_max
+        self.range_min = range_min
         self.clicked = False
         self.matrix = matrix
         self.color_range = color_range
@@ -50,10 +53,10 @@ class Cell():
                 fill = color_range[index_range]
             outline = "black"
 
-            xmin = self.abs * self.size
-            xmax = xmin + self.size
-            ymin = self.ord * self.size
-            ymax = ymin + self.size
+            xmin = self.abs * self.col_size
+            xmax = xmin + self.col_size
+            ymin = self.ord * self.row_size
+            ymax = ymin + self.row_size
 
             self.master.create_rectangle(xmin, ymin, xmax, ymax, fill = fill, outline = outline)
 
@@ -69,6 +72,7 @@ class Cell():
 
             fig = plt.figure(figsize=(8,4))
             plt.plot(x, y, linewidth = 4)
+            plt.ylim((self.range_min, self.range_max))
             plt.xticks(rotation=45)
 
             canvas = FigureCanvasTkAgg(fig, master=window)
@@ -80,17 +84,22 @@ class Cell():
         
 
 class CellGrid(Canvas):
-    def __init__(self,master, rowNumber, columnNumber, cellSize, matrix, color_range, max_difference, min_difference, *args, **kwargs):
-        Canvas.__init__(self, master, width = cellSize * columnNumber , height = cellSize * rowNumber, *args, **kwargs)
+    def __init__(self,master, rowNumber, columnNumber, row_size, col_size, matrix, color_range, max_difference, min_difference, *args, **kwargs):
+        Canvas.__init__(self, master, width = col_size * columnNumber , height = row_size * rowNumber, *args, **kwargs)
 
-        self.cellSize = cellSize
+        range_max = np.nanmax(matrix)
+        range_min = np.nanmin(matrix)
+
+        self.row_size = row_size
+        self.col_size = col_size
 
         self.grid = []
         for row in range(rowNumber):
 
             line = []
             for column in range(columnNumber):
-                line.append(Cell(self, column, row, cellSize, matrix, color_range, max_difference, min_difference))
+                line.append(Cell(self, column, row, row_size, col_size, matrix, color_range, \
+                                max_difference, min_difference, range_max, range_min))
 
             self.grid.append(line)
 
@@ -108,8 +117,8 @@ class CellGrid(Canvas):
                 cell.draw()
 
     def _eventCoords(self, event):
-        row = int(event.y / self.cellSize)
-        column = int(event.x / self.cellSize)
+        row = int(event.y / self.row_size)
+        column = int(event.x / self.col_size)
         return row, column
 
     def handleMouseClick(self, event):
@@ -123,13 +132,14 @@ if __name__ == "__main__":
     app = Tk()
 
     # parameters
-    n_row = 91
-    n_col = 91
-    resolution = 10
+    n_row = 120
+    n_col = 120
+    resolution = 1.7 # scales the dimensions of the rectangles (more rows and cols require higher resolution)
 
     # retrieve images
     matrix = mg.load_numpy_pkl('..\data\Coastal-InSAR-two-years')
-    matrix = mg.generate_array_of_grids(matrix, cf.mean, n_row=n_row, n_col=n_col)
+    matrix, row_size, col_size = mg.generate_array_of_grids(matrix, cf.mean, n_row=n_row, n_col=n_col)
+    row_size, col_size = row_size * resolution, col_size * resolution
 
     # compute color scale
     diff = nandifference(matrix[0], matrix[-1])
@@ -139,7 +149,7 @@ if __name__ == "__main__":
     color_range = list(Color("red").range_to(Color("blue"), max_difference - min_difference))
 
     # create grid
-    grid = CellGrid(app, n_row, n_col, resolution, matrix, color_range, max_difference, min_difference)
+    grid = CellGrid(app, n_row, n_col, row_size, col_size, matrix, color_range, max_difference, min_difference)
     grid.pack()
 
     app.mainloop()
