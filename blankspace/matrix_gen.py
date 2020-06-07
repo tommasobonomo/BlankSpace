@@ -47,15 +47,15 @@ def generate_single_grid(
     # parameters
     height, width = original_img.shape[0], original_img.shape[1]
     
-    row_window_size, col_window_size = round(height / n_row), round(width / n_col)
+    row_window_size, col_window_size = height // n_row, width // n_col
     row_window_size = 1 if row_window_size == 0 else row_window_size
     col_window_size = 1 if col_window_size == 0 else col_window_size
     
     matrix = np.empty((n_row, n_col))
 
     # crop image and compute chunks
-    for x, row in enumerate(range(0, height - row_window_size, row_window_size)):
-        for y, col in enumerate(range(0, width - col_window_size, col_window_size)):
+    for x, row in enumerate(range(0, (n_row - 1) * row_window_size, row_window_size)):
+        for y, col in enumerate(range(0, (n_col - 1) * col_window_size, col_window_size)):
             chunk = original_img[row : row + row_window_size,
                                  col : col + col_window_size,
                                  channel]
