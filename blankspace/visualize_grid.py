@@ -43,7 +43,8 @@ class Cell():
             else:
                 difference = self.matrix[-1, self.abs, self.ord] - self.matrix[0, self.abs, self.ord]
                 difference = int(round(difference * 100))
-                index_range = difference + abs(self.min_difference)-1 if self.min_difference < 0 else difference-1
+                index_range = difference + abs(self.min_difference) if self.min_difference < 0 else difference
+                index_range = len(color_range) - 1 if index_range == len(color_range) else index_range
 
                 #assign color
                 fill = color_range[index_range]
@@ -63,7 +64,7 @@ class Cell():
             window = Toplevel()
             window.title("Cell Trend")
 
-            y = self.matrix[0:10,self.abs,self.ord]
+            y = self.matrix[:,self.abs,self.ord]
             x = [f'Day {x+1}' for x in range(matrix.shape[0])]
 
             fig = plt.figure(figsize=(8,4))
@@ -127,7 +128,7 @@ if __name__ == "__main__":
     resolution = 10
 
     # retrieve images
-    matrix = mg.load_numpy_pkl()
+    matrix = mg.load_numpy_pkl('..\data\Coastal-InSAR-two-years')
     matrix = mg.generate_array_of_grids(matrix, cf.mean, n_row=n_row, n_col=n_col)
 
     # compute color scale
