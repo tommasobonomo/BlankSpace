@@ -8,7 +8,7 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import blankspace.matrix_gen as mg
 import blankspace.chunk_functions as cf
 
-from blankspace.utils import get_image_collection, geotiff_to_numpy
+from blankspace.utils import get_image_collection, geotiff_to_numpy, upscale
 
 
 def nandifference(first: np.ndarray, last: np.ndarray):
@@ -90,17 +90,17 @@ class Cell:
             )
 
             if self.overlay:
-            alpha = 0.5
-            alpha_channel = np.zeros_like(self.cell_original_rgb[:, :, [0]]) + alpha
-            transparent_original = np.append(
-                self.cell_original_rgb, alpha_channel, axis=2
-            )
-            transparent_original_int = np.uint8(transparent_original * 255)
-            pil_image = Image.fromarray(transparent_original_int, mode="RGBA")
-            self.pil_tk_image = ImageTk.PhotoImage(pil_image)
+                alpha = 0.5
+                alpha_channel = np.zeros_like(self.cell_original_rgb[:, :, [0]]) + alpha
+                transparent_original = np.append(
+                    self.cell_original_rgb, alpha_channel, axis=2
+                )
+                transparent_original_int = np.uint8(transparent_original * 255)
+                pil_image = Image.fromarray(transparent_original_int, mode="RGBA")
+                self.pil_tk_image = ImageTk.PhotoImage(pil_image)
                 self.master.create_image(
                     xmin, ymin, image=self.pil_tk_image, anchor="nw"
-            )
+                )
 
     def show_graphics(self):
         """show statistics of this cell"""
@@ -161,11 +161,11 @@ class CellGrid(Canvas):
             line = []
             for column in range(columnNumber):
                 if overlay:
-                cell_original_rgb = original_img[
-                    row * row_size : (row + 1) * row_size,
-                    column * col_size : (column + 1) * col_size,
-                    :,
-                ]
+                    cell_original_rgb = original_img[
+                        row * row_size : (row + 1) * row_size,
+                        column * col_size : (column + 1) * col_size,
+                        :,
+                    ]
                 else:
                     cell_original_rgb = None
 
@@ -217,9 +217,9 @@ if __name__ == "__main__":
     app = Tk()
 
     # parameters
-    n_row = 30
-    n_col = 30
-    resolution = 1  # scales the dimensions of the rectangles (more rows and cols require higher resolution)
+    n_row = 120
+    n_col = 120
+    resolution = 2  # scales the dimensions of the rectangles (more rows and cols require higher resolution)
 
     # retrieve images
     base_path = os.path.join("data", "Coastal-InSAR-two-years")
@@ -239,14 +239,19 @@ if __name__ == "__main__":
     original_bands, original_img_raw = geotiff_to_numpy("data/Coastal-RGB")
     # Must crop to dimension used for grid splitting
     rgb_idx = [original_bands.index(band) for band in ["B4", "B3", "B2"]]
-    original_img = np.clip(
-        (original_img_raw[: row_size * n_row, : col_size * col_size, rgb_idx] / 10000),
-        0,
-        1,
-    )
 
-    row_size = row_size * resolution
-    col_size = col_size * resolution
+    if resolution != 1:
+        target_rows = int(original_img_raw.shape[0] * resolution)
+        target_cols = int(original_img_raw.shape[1] * resolution)
+        original_img_raw = upscale(original_img_raw / 10000, (target_rows, target_cols))
+        row_size = int(row_size * resolution)
+        col_size = int(col_size * resolution)
+    else:
+        original_img_raw = original_img_raw / 10000
+
+    original_img = np.clip(
+        (original_img_raw[: row_size * n_row, : col_size * n_col, rgb_idx]), 0, 1,
+    )
 
     # compute color scale
     diff = nandifference(matrix[0], matrix[-1])
