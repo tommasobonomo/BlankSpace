@@ -1,6 +1,7 @@
 import os
 import numpy as np
 from tkinter import Toplevel, Canvas, Tk
+from PIL import Image, ImageTk
 from colour import Color
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
@@ -31,6 +32,7 @@ class Cell:
         min_difference,
         range_max,
         range_min,
+        cell_original_rgb,
     ):
         """ Constructor of the object called by Cell(...) """
         self.master = master
@@ -45,6 +47,7 @@ class Cell:
         self.color_range = color_range
         self.max_difference = max_difference
         self.min_difference = min_difference
+        self.cell_original_rgb = cell_original_rgb
 
     def _switch(self):
         """ Switch if the cell has been clicked or not. """
@@ -72,7 +75,17 @@ class Cell:
 
                 # assign color
                 fill = color_range[index_range]
+
             outline = "black"
+
+            alpha = 0.5
+            alpha_channel = np.zeros_like(self.cell_original_rgb[:, :, [0]]) + alpha
+            transparent_original = np.append(
+                self.cell_original_rgb, alpha_channel, axis=2
+            )
+            transparent_original_int = np.uint8(transparent_original * 255)
+            pil_image = Image.fromarray(transparent_original_int, mode="RGBA")
+            self.pil_tk_image = ImageTk.PhotoImage(pil_image)
 
             xmin = self.abs * self.col_size
             xmax = xmin + self.col_size
@@ -82,6 +95,7 @@ class Cell:
             self.master.create_rectangle(
                 xmin, ymin, xmax, ymax, fill=fill, outline=outline
             )
+            self.master.create_image(xmin, ymin, image=self.pil_tk_image, anchor="nw")
 
     def show_graphics(self):
         """show statistics of this cell"""
@@ -117,6 +131,7 @@ class CellGrid(Canvas):
         color_range,
         max_difference,
         min_difference,
+        original_image,
         *args,
         **kwargs,
     ):
@@ -139,6 +154,12 @@ class CellGrid(Canvas):
         for row in range(rowNumber):
             line = []
             for column in range(columnNumber):
+                cell_original_rgb = original_img[
+                    row * row_size : (row + 1) * row_size,
+                    column * col_size : (column + 1) * col_size,
+                    :,
+                ]
+
                 line.append(
                     Cell(
                         self,
@@ -152,6 +173,7 @@ class CellGrid(Canvas):
                         min_difference,
                         range_max,
                         range_min,
+                        cell_original_rgb,
                     )
                 )
 
@@ -185,9 +207,9 @@ if __name__ == "__main__":
     app = Tk()
 
     # parameters
-    n_row = 120
-    n_col = 120
-    resolution = 1.7  # scales the dimensions of the rectangles (more rows and cols require higher resolution)
+    n_row = 30
+    n_col = 30
+    resolution = 1  # scales the dimensions of the rectangles (more rows and cols require higher resolution)
 
     # retrieve images
     base_path = os.path.join("data", "Coastal-InSAR-two-years")
@@ -239,6 +261,7 @@ if __name__ == "__main__":
         color_range,
         max_difference,
         min_difference,
+        original_img,
     )
     grid.pack()
 
