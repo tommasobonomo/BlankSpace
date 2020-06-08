@@ -1,13 +1,14 @@
 import os
 import numpy as np
 from tkinter import Toplevel, Canvas, Tk
+from PIL import Image, ImageTk
 from colour import Color
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import blankspace.matrix_gen as mg
 import blankspace.chunk_functions as cf
 
-from blankspace.utils import get_image_collection
+from blankspace.utils import get_image_collection, geotiff_to_numpy, upscale
 
 
 def nandifference(first: np.ndarray, last: np.ndarray):
@@ -31,6 +32,8 @@ class Cell:
         min_difference,
         range_max,
         range_min,
+        cell_original_rgb,
+        overlay,
     ):
         """ Constructor of the object called by Cell(...) """
         self.master = master
@@ -45,6 +48,8 @@ class Cell:
         self.color_range = color_range
         self.max_difference = max_difference
         self.min_difference = min_difference
+        self.cell_original_rgb = cell_original_rgb
+        self.overlay = overlay
 
     def _switch(self):
         """ Switch if the cell has been clicked or not. """
@@ -55,14 +60,14 @@ class Cell:
         if self.master is not None:
 
             # calculate index in color range
-            if np.isnan(self.matrix[-1, self.abs, self.ord]) or np.isnan(
-                self.matrix[0, self.abs, self.ord]
+            if np.isnan(self.matrix[-1, self.ord, self.abs]) or np.isnan(
+                self.matrix[0, self.ord, self.abs]
             ):
                 fill = Color("black")
             else:
                 mat_difference = (
-                    self.matrix[-1, self.abs, self.ord]
-                    - self.matrix[0, self.abs, self.ord]
+                    self.matrix[-1, self.ord, self.abs]
+                    - self.matrix[0, self.ord, self.abs]
                 )
                 difference = int(round(mat_difference * 100))
                 scaled_difference = (difference - self.min_difference) / (
@@ -72,6 +77,7 @@ class Cell:
 
                 # assign color
                 fill = color_range[index_range]
+
             outline = "black"
 
             xmin = self.abs * self.col_size
@@ -83,6 +89,19 @@ class Cell:
                 xmin, ymin, xmax, ymax, fill=fill, outline=outline
             )
 
+            if self.overlay:
+                alpha = 0.5
+                alpha_channel = np.zeros_like(self.cell_original_rgb[:, :, [0]]) + alpha
+                transparent_original = np.append(
+                    self.cell_original_rgb, alpha_channel, axis=2
+                )
+                transparent_original_int = np.uint8(transparent_original * 255)
+                pil_image = Image.fromarray(transparent_original_int, mode="RGBA")
+                self.pil_tk_image = ImageTk.PhotoImage(pil_image)
+                self.master.create_image(
+                    xmin, ymin, image=self.pil_tk_image, anchor="nw"
+                )
+
     def show_graphics(self):
         """show statistics of this cell"""
         if self.clicked:
@@ -90,7 +109,7 @@ class Cell:
             window = Toplevel()
             window.title("Cell Trend")
 
-            y = self.matrix[:, self.abs, self.ord]
+            y = self.matrix[:, self.ord, self.abs]
             x = [f"Day {x+1}" for x in range(matrix.shape[0])]
 
             fig = plt.figure(figsize=(8, 4))
@@ -117,6 +136,8 @@ class CellGrid(Canvas):
         color_range,
         max_difference,
         min_difference,
+        original_image,
+        overlay,
         *args,
         **kwargs,
     ):
@@ -137,9 +158,17 @@ class CellGrid(Canvas):
 
         self.grid = []
         for row in range(rowNumber):
-
             line = []
             for column in range(columnNumber):
+                if overlay:
+                    cell_original_rgb = original_img[
+                        row * row_size : (row + 1) * row_size,
+                        column * col_size : (column + 1) * col_size,
+                        :,
+                    ]
+                else:
+                    cell_original_rgb = None
+
                 line.append(
                     Cell(
                         self,
@@ -153,6 +182,8 @@ class CellGrid(Canvas):
                         min_difference,
                         range_max,
                         range_min,
+                        cell_original_rgb,
+                        overlay,
                     )
                 )
 
@@ -188,7 +219,7 @@ if __name__ == "__main__":
     # parameters
     n_row = 120
     n_col = 120
-    resolution = 1.7  # scales the dimensions of the rectangles (more rows and cols require higher resolution)
+    resolution = 2  # scales the dimensions of the rectangles (more rows and cols require higher resolution)
 
     # retrieve images
     base_path = os.path.join("data", "Coastal-InSAR-two-years")
@@ -203,7 +234,24 @@ if __name__ == "__main__":
     matrix, row_size, col_size = mg.generate_array_of_grids(
         matrix, cf.mean, n_row=n_row, n_col=n_col
     )
-    row_size, col_size = row_size * resolution, col_size * resolution
+
+    # Read a original RGB image
+    original_bands, original_img_raw = geotiff_to_numpy("data/Coastal-RGB")
+    # Must crop to dimension used for grid splitting
+    rgb_idx = [original_bands.index(band) for band in ["B4", "B3", "B2"]]
+
+    if resolution != 1:
+        target_rows = int(original_img_raw.shape[0] * resolution)
+        target_cols = int(original_img_raw.shape[1] * resolution)
+        original_img_raw = upscale(original_img_raw / 10000, (target_rows, target_cols))
+        row_size = int(row_size * resolution)
+        col_size = int(col_size * resolution)
+    else:
+        original_img_raw = original_img_raw / 10000
+
+    original_img = np.clip(
+        (original_img_raw[: row_size * n_row, : col_size * n_col, rgb_idx]), 0, 1,
+    )
 
     # compute color scale
     diff = nandifference(matrix[0], matrix[-1])
@@ -218,6 +266,7 @@ if __name__ == "__main__":
     )
 
     # create grid
+    overlay = True
     grid = CellGrid(
         app,
         n_row,
@@ -228,6 +277,8 @@ if __name__ == "__main__":
         color_range,
         max_difference,
         min_difference,
+        original_img,
+        overlay,
     )
     grid.pack()
 
