@@ -33,6 +33,7 @@ class Cell:
         range_max,
         range_min,
         cell_original_rgb,
+        overlay,
     ):
         """ Constructor of the object called by Cell(...) """
         self.master = master
@@ -48,6 +49,7 @@ class Cell:
         self.max_difference = max_difference
         self.min_difference = min_difference
         self.cell_original_rgb = cell_original_rgb
+        self.overlay = overlay
 
     def _switch(self):
         """ Switch if the cell has been clicked or not. """
@@ -78,15 +80,6 @@ class Cell:
 
             outline = "black"
 
-            alpha = 0.5
-            alpha_channel = np.zeros_like(self.cell_original_rgb[:, :, [0]]) + alpha
-            transparent_original = np.append(
-                self.cell_original_rgb, alpha_channel, axis=2
-            )
-            transparent_original_int = np.uint8(transparent_original * 255)
-            pil_image = Image.fromarray(transparent_original_int, mode="RGBA")
-            self.pil_tk_image = ImageTk.PhotoImage(pil_image)
-
             xmin = self.abs * self.col_size
             xmax = xmin + self.col_size
             ymin = self.ord * self.row_size
@@ -95,7 +88,19 @@ class Cell:
             self.master.create_rectangle(
                 xmin, ymin, xmax, ymax, fill=fill, outline=outline
             )
-            self.master.create_image(xmin, ymin, image=self.pil_tk_image, anchor="nw")
+
+            if self.overlay:
+            alpha = 0.5
+            alpha_channel = np.zeros_like(self.cell_original_rgb[:, :, [0]]) + alpha
+            transparent_original = np.append(
+                self.cell_original_rgb, alpha_channel, axis=2
+            )
+            transparent_original_int = np.uint8(transparent_original * 255)
+            pil_image = Image.fromarray(transparent_original_int, mode="RGBA")
+            self.pil_tk_image = ImageTk.PhotoImage(pil_image)
+                self.master.create_image(
+                    xmin, ymin, image=self.pil_tk_image, anchor="nw"
+            )
 
     def show_graphics(self):
         """show statistics of this cell"""
@@ -132,6 +137,7 @@ class CellGrid(Canvas):
         max_difference,
         min_difference,
         original_image,
+        overlay,
         *args,
         **kwargs,
     ):
@@ -154,11 +160,14 @@ class CellGrid(Canvas):
         for row in range(rowNumber):
             line = []
             for column in range(columnNumber):
+                if overlay:
                 cell_original_rgb = original_img[
                     row * row_size : (row + 1) * row_size,
                     column * col_size : (column + 1) * col_size,
                     :,
                 ]
+                else:
+                    cell_original_rgb = None
 
                 line.append(
                     Cell(
@@ -174,6 +183,7 @@ class CellGrid(Canvas):
                         range_max,
                         range_min,
                         cell_original_rgb,
+                        overlay,
                     )
                 )
 
@@ -251,6 +261,7 @@ if __name__ == "__main__":
     )
 
     # create grid
+    overlay = True
     grid = CellGrid(
         app,
         n_row,
@@ -262,6 +273,7 @@ if __name__ == "__main__":
         max_difference,
         min_difference,
         original_img,
+        overlay,
     )
     grid.pack()
 
