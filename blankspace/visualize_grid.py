@@ -55,14 +55,14 @@ class Cell:
         if self.master is not None:
 
             # calculate index in color range
-            if np.isnan(self.matrix[-1, self.abs, self.ord]) or np.isnan(
-                self.matrix[0, self.abs, self.ord]
+            if np.isnan(self.matrix[-1, self.ord, self.abs]) or np.isnan(
+                self.matrix[0, self.ord, self.abs]
             ):
                 fill = Color("black")
             else:
                 mat_difference = (
-                    self.matrix[-1, self.abs, self.ord]
-                    - self.matrix[0, self.abs, self.ord]
+                    self.matrix[-1, self.ord, self.abs]
+                    - self.matrix[0, self.ord, self.abs]
                 )
                 difference = int(round(mat_difference * 100))
                 scaled_difference = (difference - self.min_difference) / (
@@ -90,7 +90,7 @@ class Cell:
             window = Toplevel()
             window.title("Cell Trend")
 
-            y = self.matrix[:, self.abs, self.ord]
+            y = self.matrix[:, self.ord, self.abs]
             x = [f"Day {x+1}" for x in range(matrix.shape[0])]
 
             fig = plt.figure(figsize=(8, 4))
@@ -137,7 +137,6 @@ class CellGrid(Canvas):
 
         self.grid = []
         for row in range(rowNumber):
-
             line = []
             for column in range(columnNumber):
                 line.append(
