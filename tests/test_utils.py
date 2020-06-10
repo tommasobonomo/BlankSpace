@@ -191,9 +191,6 @@ def test_get_image_collection():
     assert len(uncollated_collection) == len(
         different_res_paths
     ), "Different res images should all be in list with collate == False"
-    assert (
-        uncollated_collection[0] == test_image
-    ).all(), "Should correspond to order of given paths"
 
 
 # def test_earth_engine_to_google_drive():
